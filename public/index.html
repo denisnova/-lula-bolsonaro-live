@@ -1,0 +1,109 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lula x Bolsonaro — Live</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#090b12;color:white;font-family:Arial,sans-serif;text-align:center}
+header{padding:18px;background:#141827;font-size:24px;font-weight:bold}
+.status{font-size:13px;color:#bbb;margin:12px}
+.score{display:flex;gap:10px;padding:12px}
+.team{flex:1;padding:20px 8px;border-radius:14px;min-width:0}
+.blue{background:#123f9b;border:2px solid #4385ff}
+.red{background:#9d171e;border:2px solid #ff5151}
+.team h2{font-size:20px;margin:0 0 10px}
+.points{font-size:48px;font-weight:bold}
+.bar{height:18px;background:#292d3a;margin:12px;border-radius:20px;overflow:hidden;display:flex}
+#bluebar{height:100%;width:50%;background:#3982ff}
+#redbar{height:100%;width:50%;background:#ff4040;margin-left:auto}
+.timer{font-size:36px;font-weight:bold;margin:16px}
+button{border:0;border-radius:10px;padding:13px;margin:5px;color:white;font-weight:bold;font-size:14px}
+button:active{transform:scale(.97)}
+.btnblue{background:#2368e8}.btnred{background:#db2934}
+.neutral{background:#303647}
+.note{font-size:12px;color:#aaa;padding:12px}
+</style>
+</head>
+<body>
+<header>🇧🇷 LULA × BOLSONARO 🇧🇷</header>
+<div class="status" id="status">Aguardando conexão com o servidor…</div>
+<div class="score">
+  <div class="team blue">
+    <h2>🔵 LULA</h2>
+    <div class="points" id="blue">0</div>
+    <div>PONTOS</div>
+  </div>
+  <div class="team red">
+    <h2>🔴 BOLSONARO</h2>
+    <div class="points" id="red">0</div>
+    <div>PONTOS</div>
+  </div>
+</div>
+<div class="bar">
+  <div id="bluebar"></div>
+  <div id="redbar"></div>
+</div>
+<div class="timer" id="timer">10:00</div>
+<div>
+  <button class="btnblue" onclick="demo('blue')">🎁 Testar Lula +1</button>
+  <button class="btnred" onclick="demo('red')">🎁 Testar Bolsonaro +1</button>
+</div>
+<div>
+  <button class="neutral" onclick="startTimer()">▶ Iniciar tempo</button>
+  <button class="neutral" onclick="resetGame()">↻ Reiniciar</button>
+  <button class="neutral" onclick="fullScreen()">⛶ Tela cheia</button>
+</div>
+<div class="note">Botões servem para testar. Os presentes reais dependem da conexão com o TikTok LIVE.</div>
+<script>
+let scores={blue:0,red:0};
+let seconds=600, interval=null;
+function render(){
+ document.getElementById('blue').textContent=scores.blue;
+ document.getElementById('red').textContent=scores.red;
+ let total=scores.blue+scores.red||1;
+ document.getElementById('bluebar').style.width=(scores.blue/total*100)+'%';
+ document.getElementById('redbar').style.width=(scores.red/total*100)+'%';
+ document.getElementById('timer').textContent=
+ String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0');
+}
+function demo(team){scores[team]++;render()}
+function startTimer(){
+ if(interval)return;
+ interval=setInterval(()=>{
+  if(seconds>0){seconds--;render()}
+  else{clearInterval(interval);interval=null}
+ },1000);
+}
+function resetGame(){
+ clearInterval(interval);interval=null;
+ scores={blue:0,red:0};seconds=600;render();
+}
+function fullScreen(){
+ if(!document.fullscreenElement)document.documentElement.requestFullscreen?.();
+ else document.exitFullscreen?.();
+}
+const protocol=location.protocol==='https:'?'wss:':'ws:';
+const socket=new WebSocket(protocol+'//'+location.host);
+socket.onopen=()=>document.getElementById('status').textContent='Conectado ao servidor; aguardando TikTok…';
+socket.onclose=()=>document.getElementById('status').textContent='Servidor desconectado';
+socket.onerror=()=>document.getElementById('status').textContent='Não foi possível conectar ao servidor';
+socket.onmessage=e=>{
+ try{
+  const data=JSON.parse(e.data);
+  if(data.type==='init'&&data.totals){
+   scores=data.totals;render();
+   if(data.status?.message)document.getElementById('status').textContent=data.status.message;
+  }
+  if(data.type==='gift'&&data.totals){scores=data.totals;render()}
+  if(data.type==='status'&&data.status){
+   document.getElementById('status').textContent=data.status.message;
+  }
+ }catch(err){}
+};
+render();
+</script>
+</body>
+</html>
