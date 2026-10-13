@@ -3,202 +3,387 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Corrida Presidencial</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Corrida Presidencial 2D</title>
 <style>
 *{box-sizing:border-box}
-body{
-  margin:0;background:#101820;color:white;
-  font-family:Arial,sans-serif;text-align:center;
-  overflow:hidden
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#10182a;font-family:Arial,sans-serif}
+canvas{display:block;width:100%;height:100%}
+#controls{
+ position:fixed;bottom:0;left:0;right:0;
+ padding:12px 8px calc(12px + env(safe-area-inset-bottom));
+ display:flex;flex-wrap:wrap;justify-content:center;gap:7px;
+ background:linear-gradient(transparent,#08101df5 20%);
 }
-h1{font-size:clamp(23px,5vw,38px);margin:15px 0 5px}
-.sub{color:#cbd5e1;margin:5px}
-.pista{
-  position:relative;margin:25px 12px;
-  height:145px;border-radius:15px;
-  background:repeating-linear-gradient(
-    90deg,#333 0px,#333 35px,#444 35px,#444 70px
-  );
-  border:3px solid white;overflow:hidden
-}
-.pista.bolsonaro{border-color:#16c75b}
-.pista.lula{border-color:#ed3030}
-.linha{
-  position:absolute;right:22px;top:0;bottom:0;
-  border-left:5px dashed white
-}
-.corredor{
-  position:absolute;left:8px;top:50%;
-  transform:translateY(-50%);
-  font-size:48px;transition:left .15s linear;
-  white-space:nowrap
-}
-.bandeira{
-  position:absolute;right:0;top:0;
-  height:100%;width:35px;
-  background:repeating-linear-gradient(
-    0deg,white 0 10px,#111 10px 20px
-  )
-}
-.nome{font-size:20px;font-weight:bold;margin-top:10px}
-.lula-texto{color:#ff5b5b}
-.bolsonaro-texto{color:#39e878}
-#status{font-size:19px;margin:20px 8px;min-height:28px}
-button{
-  border:0;border-radius:10px;padding:13px 16px;
-  margin:5px;font-weight:bold;font-size:15px;
-  color:white;background:#2563eb
-}
-.vermelho{background:#dc2626}
-.verde{background:#15803d}
-.secundario{background:#475569}
-#fim{font-size:28px;font-weight:bold;margin:15px}
+button{border:0;border-radius:9px;padding:11px 12px;color:white;
+font-weight:bold;background:#34445e;font-size:13px}
+.red{background:#c52c40}.green{background:#16874b}
+#hint{position:fixed;top:8px;left:5px;right:5px;text-align:center;
+color:white;font-size:12px;text-shadow:0 2px 4px black;pointer-events:none}
 </style>
 </head>
 <body>
-
-<h1>🏁 CORRIDA PRESIDENCIAL 🏁</h1>
-<p class="sub">Rosas impulsionam Lula • Presentes impulsionam Bolsonaro</p>
-
-<div class="nome lula-texto">🔴 LULA</div>
-<div class="pista lula">
-  <div class="linha"></div>
-  <div class="corredor" id="corredorLula">🏃‍♂️</div>
-</div>
-
-<div class="nome bolsonaro-texto">🟢 BOLSONARO</div>
-<div class="pista bolsonaro">
-  <div class="linha"></div>
-  <div class="corredor" id="corredorBolsonaro">🏃‍♂️</div>
-</div>
-
-<div id="status">A corrida começou! Digite 13 para Lula ou 22 para Bolsonaro.</div>
-<div id="fim"></div>
-
-<div>
-  <button class="vermelho" onclick="impulsoLula()">🌹 Testar rosa — Lula</button>
-  <button class="verde" onclick="impulsoBolsonaro()">🎁 Testar presente — Bolsonaro</button>
-</div>
-<div>
-  <button class="secundario" onclick="novaCorrida()">🔄 Nova corrida</button>
-  <button class="secundario" onclick="ativarVoz()">🔊 Ativar voz</button>
+<canvas id="game"></canvas>
+<div id="hint">CORRIDA PRESIDENCIAL • 2D</div>
+<div id="controls">
+<button class="red" onclick="giftLula()">ROSA — LULA</button>
+<button class="green" onclick="giftBolsonaro()">PRESENTE — BOLSONARO</button>
+<button onclick="chat('13')">COMENTÁRIO 13</button>
+<button onclick="chat('22')">COMENTÁRIO 22</button>
+<button onclick="voiceOn()">ATIVAR VOZ</button>
+<button onclick="restart()">REINICIAR</button>
 </div>
 
 <script>
-const DURACAO = 5 * 60 * 1000;
-const META = 100;
-let lula = 0;
-let bolsonaro = 0;
-let inicio = Date.now();
-let terminou = false;
-let animacao;
-let ultimaFala = 0;
+const canvas=document.querySelector("#game");
+const c=canvas.getContext("2d");
+const W=720,H=1280;
+const DURATION=300000;
+let start=performance.now(),last=0,finished=false,winner="";
+let boostL=0,boostB=0,notice="",noticeUntil=0;
+let particles=[];
 
-function falarLula(texto) {
-  falar(texto, 0.88, 0.95);
+function resize(){
+ const d=Math.min(devicePixelRatio||1,2);
+ canvas.width=innerWidth*d;
+ canvas.height=innerHeight*d;
+ c.setTransform(canvas.width/W,0,0,canvas.height/H,0,0);
 }
-function falarBolsonaro(texto) {
-  falar(texto, 0.75, 1.05);
-}
-function falar(texto, tom, velocidade) {
-  if (!("speechSynthesis" in window)) return;
-  speechSynthesis.cancel();
-  const voz = new SpeechSynthesisUtterance(texto);
-  voz.lang = "pt-BR";
-  voz.pitch = tom;
-  voz.rate = velocidade;
-  voz.volume = 1;
-  const vozes = speechSynthesis.getVoices();
-  voz.voice = vozes.find(v => v.lang.toLowerCase().startsWith("pt-br")) ||
-              vozes.find(v => v.lang.toLowerCase().startsWith("pt")) || null;
-  speechSynthesis.speak(voz);
-}
-function ativarVoz() {
-  falar("A corrida presidencial vai começar!", 0.9, 1);
-}
-function atualizar() {
-  if (terminou) return;
+addEventListener("resize",resize);resize();
 
-  const decorrido = Date.now() - inicio;
-  if (decorrido >= DURACAO) {
-    lula = Math.max(lula, 0);
-    bolsonaro = Math.max(bolsonaro, 0);
-    terminou = true;
-    finalizar(lula >= bolsonaro ? "Lula" : "Bolsonaro");
-    return;
+function rect(x,y,w,h,color){
+ c.fillStyle=color;c.fillRect(x,y,w,h);
+}
+function text(s,x,y,size,color="#fff",align="center"){
+ c.fillStyle=color;c.font=`bold ${size}px Arial`;
+ c.textAlign=align;c.fillText(s,x,y);
+}
+function polygon(points,color){
+ c.fillStyle=color;c.beginPath();
+ c.moveTo(points[0][0],points[0][1]);
+ for(let i=1;i<points.length;i++)c.lineTo(points[i][0],points[i][1]);
+ c.closePath();c.fill();
+}
+function line(x1,y1,x2,y2,color,width){
+ c.strokeStyle=color;c.lineWidth=width;c.lineCap="round";
+ c.beginPath();c.moveTo(x1,y1);c.lineTo(x2,y2);c.stroke();
+}
+
+// Estádio com arquibancadas, torcida e telão.
+function stadium(t){
+ let sky=c.createLinearGradient(0,0,0,660);
+ sky.addColorStop(0,"#101b39");
+ sky.addColorStop(.6,"#315578");
+ sky.addColorStop(1,"#8ca9b8");
+ rect(0,0,W,660,sky);
+
+ // Refletores
+ for(let i=0;i<5;i++){
+  let x=45+i*158;
+  rect(x,48,75,15,"#d8e9ff");
+  for(let j=0;j<4;j++)rect(x+8+j*17,65,7,8,"#fff4c5");
+  polygon([[x,75],[x+70,75],[x+145,270],[x-55,270]],"rgba(255,248,200,.035)");
+ }
+
+ // Arquibancadas
+ polygon([[0,175],[720,175],[720,600],[0,600]],"#263950");
+ polygon([[0,240],[720,240],[720,610],[0,610]],"#46566a");
+
+ const colors=["#f3d56a","#e65065","#59b7e9","#f3f3f3",
+ "#43d58a","#f39c65","#a78bfa"];
+ for(let row=0;row<9;row++){
+  for(let col=0;col<45;col++){
+   let x=col*17+((row%2)*8)-((t*.018)%17);
+   let y=270+row*34;
+   let k=(col*7+row*13)%colors.length;
+   rect(x,y,8,10,colors[k]);
+   rect(x+1,y+9,6,5,"#202a3b");
+   if((col+row)%4===0)rect(x+2,y-4,4,5,"#e0b28c");
   }
+ }
 
-  // Corrida automática: ambos avançam gradualmente.
-  lula += 0.025 + Math.random() * 0.025;
-  bolsonaro += 0.025 + Math.random() * 0.025;
+ // Telão
+ rect(165,115,390,105,"#111a2b");
+ rect(174,124,372,87,"#263d52");
+ text("CORRIDA PRESIDENCIAL",360,159,23,"#ffffff");
+ text("GRANDE FINAL",360,191,17,"#ffdc83");
 
-  desenhar();
-  if (lula >= META) finalizar("Lula");
-  else if (bolsonaro >= META) finalizar("Bolsonaro");
-  else animacao = requestAnimationFrame(atualizar);
+ // Gramado
+ rect(0,585,W,85,"#237642");
+ for(let i=0;i<12;i++)rect(i*65,585,32,85,"#2b8749");
+ rect(0,660,W,22,"#e2d7b4");
 }
-function desenhar() {
-  document.getElementById("corredorLula").style.left =
-    Math.min(88, lula * 0.88) + "%";
-  document.getElementById("corredorBolsonaro").style.left =
-    Math.min(88, bolsonaro * 0.88) + "%";
+
+// Pista, faixas e objetos passam para simular velocidade.
+function track(t){
+ rect(0,682,W,490,"#81333e");
+ rect(0,696,W,455,"#a34650");
+
+ // Faixas horizontais
+ for(let i=0;i<5;i++){
+  let y=704+i*106;
+  rect(0,y,W,3,"#e8d9c8");
+ }
+ // Textura móvel do piso
+ let shift=(t*.12)%100;
+ for(let i=-2;i<10;i++){
+  let x=i*100-shift;
+  rect(x,700,45,4,"#bb6269");
+  rect(x+35,815,35,4,"#bb6269");
+  rect(x+60,930,30,4,"#bb6269");
+  rect(x+15,1040,42,4,"#bb6269");
+ }
+ // Marcas laterais
+ rect(0,683,W,7,"#f5e9d7");
+ rect(0,1160,W,7,"#f5e9d7");
+
+ // Cones e placas no cenário em movimento
+ for(let i=0;i<5;i++){
+  let x=((i*190-(t*.16)%950)+950)%950-100;
+  if(x<720){
+   rect(x,674,27,9,"#fff");
+   polygon([[x+3,674],[x+13,651],[x+23,674]],"#ffca50");
+  }
+ }
 }
-function impulsoLula() {
-  if (terminou) return;
-  lula = Math.min(META, lula + 8);
-  document.getElementById("status").textContent = "🌹 Lula recebeu um impulso!";
-  falarLula("Valeu pela rosa! Bora correr!");
-  desenhar();
-  if (lula >= META) finalizar("Lula");
+
+// Personagem 2D desenhado com corpo, roupa, rosto e membros animados.
+function drawRunner(x,feet,team,t){
+ c.save();
+ c.translate(x,feet);
+ c.scale(1.18,1.18);
+
+ const red=team==="lula";
+ const shirt=red?"#d62e40":"#168b4c";
+ const dark=red?"#921e30":"#095b35";
+ const hair=red?"#c2c8ce":"#352a25";
+ const skin="#dba37e";
+ const a=Math.sin(t*0.012),b=Math.cos(t*0.012);
+
+ // Sombra
+ c.fillStyle="rgba(20,10,20,.4)";
+ c.beginPath();c.ellipse(0,0,34,7,0,0,Math.PI*2);c.fill();
+
+ // Pernas articuladas
+ line(-6,-31,-11+a*15,-16,"#293447",12);
+ line(-11+a*15,-16,-20+b*18,-5,"#293447",10);
+ line(7,-31,12-a*15,-16,"#293447",12);
+ line(12-a*15,-16,19-b*18,-5,"#293447",10);
+
+ // Tênis
+ polygon([[-29+b*18,-9],[-14+b*18,-9],[-8+b*18,-3],[-29+b*18,-3]],"#f6f1e7");
+ polygon([[9-b*18,-9],[24-b*18,-9],[30-b*18,-3],[10-b*18,-3]],"#f6f1e7");
+ line(-26+b*18,-4,-12+b*18,-4,"#1a2534",2);
+ line(12-b*18,-4,26-b*18,-4,"#1a2534",2);
+
+ // Tronco e camisa
+ polygon([[-17,-75],[12,-75],[20,-37],[11,-27],[-12,-27],[-21,-39]],shirt);
+ polygon([[-17,-75],[-4,-70],[0,-34],[-12,-29],[-21,-39]],dark);
+ rect(-10,-69,19,4,"#ffffff");
+ rect(3,-62,3,19,red?"#f1c36b":"#f1c36b");
+
+ // Braços alternados
+ line(-15,-67,-25-a*13,-51,shirt,11);
+ line(-25-a*13,-51,-17+a*18,-40,shirt,9);
+ line(14,-67,24+a*13,-51,shirt,11);
+ line(24+a*13,-51,17-a*18,-40,shirt,9);
+ rect(-21+a*18,-44,9,10,skin);
+ rect(13-a*18,-44,9,10,skin);
+
+ // Pescoço
+ rect(-7,-86,14,14,skin);
+
+ // Cabeça
+ rect(-18,-117,36,35,skin);
+ rect(-21,-107,4,11,skin);
+ rect(17,-107,4,11,skin);
+
+ // Cabelo
+ polygon([[-19,-108],[-19,-120],[-11,-129],[7,-129],[17,-120],[19,-110],
+ [-1,-115],[-12,-110]],hair);
+
+ // Olhos
+ rect(-10,-108,4,4,"#20202a");
+ rect(6,-108,4,4,"#20202a");
+ rect(-2,-103,5,8,"#bb7957");
+
+ // Características estilizadas
+ if(red){
+  // Barba grisalha e bigode
+  polygon([[-17,-100],[-12,-94],[-9,-85],[0,-81],[10,-85],[16,-96],[14,-102],
+  [7,-98],[-5,-99],[-13,-96]],"#c4c9ce");
+  rect(-6,-99,13,4,"#ece9df");
+  rect(-5,-87,10,3,"#8d9399");
+ }else{
+  // Bigode e queixo
+  rect(-6,-99,13,4,"#4c3028");
+  rect(-3,-88,7,3,"#b87b5b");
+ }
+
+ // Costuras e detalhe na camisa
+ line(-13,-54,12,-54,"rgba(255,255,255,.45)",2);
+ rect(5,-48,4,9,"#f5d879");
+
+ c.restore();
 }
-function impulsoBolsonaro() {
-  if (terminou) return;
-  bolsonaro = Math.min(META, bolsonaro + 8);
-  document.getElementById("status").textContent = "🎁 Bolsonaro recebeu um impulso!";
-  falarBolsonaro("Obrigado pelo presente! Vamos acelerar!");
-  desenhar();
-  if (bolsonaro >= META) finalizar("Bolsonaro");
+
+// Efeitos de velocidade e poeira.
+function dust(x,y,t,color){
+ for(let i=0;i<5;i++){
+  let dx=(t*.06+i*17)%70;
+  let dy=Math.sin(t*.01+i)*8;
+  rect(x-28-dx,y-12+dy,5,4,color);
+ }
 }
-function finalizar(vencedor) {
-  if (terminou && document.getElementById("fim").textContent) return;
-  terminou = true;
-  cancelAnimationFrame(animacao);
-  document.getElementById("fim").textContent =
-    "🏆 VENCEDOR: " + vencedor.toUpperCase() + " 🎉";
-  document.getElementById("status").textContent = "Fim da corrida!";
-  if (vencedor === "Lula") falarLula("Vencemos a corrida! Obrigado pelo apoio!");
-  else falarBolsonaro("Vencemos a corrida! Obrigado pelo apoio!");
+
+function progress(now){
+ const elapsed=now-start;
+ const base=Math.min(100,elapsed/DURATION*100);
+ return {
+  elapsed,
+  lula:Math.min(100,base+boostL),
+  bolsonaro:Math.min(100,base+boostB)
+ };
 }
-function novaCorrida() {
-  cancelAnimationFrame(animacao);
-  if ("speechSynthesis" in window) speechSynthesis.cancel();
-  lula = 0;
-  bolsonaro = 0;
-  inicio = Date.now();
-  terminou = false;
-  document.getElementById("fim").textContent = "";
-  document.getElementById("status").textContent = "A corrida começou!";
-  desenhar();
-  animacao = requestAnimationFrame(atualizar);
+
+function hud(p){
+ // Placas de posição
+ rect(18,224,310,100,"rgba(9,19,35,.91)");
+ rect(392,224,310,100,"rgba(9,19,35,.91)");
+ text("LULA",45,258,25,"#ff6674","left");
+ text("BOLSONARO",420,258,25,"#50e895","left");
+
+ rect(44,275,260,15,"#354257");
+ rect(44,275,260*p.lula/100,15,"#ec3449");
+ rect(419,275,260,15,"#354257");
+ rect(419,275,260*p.bolsonaro/100,15,"#1ec76b");
+ text(Math.floor(p.lula)+"%",174,311,20);
+ text(Math.floor(p.bolsonaro)+"%",549,311,20);
+
+ let sec=Math.max(0,300-Math.floor(p.elapsed/1000));
+ text("TEMPO  "+String(Math.floor(sec/60)).padStart(2,"0")+":"+
+ String(sec%60).padStart(2,"0"),360,369,24,"#ffffff");
+
+ if(notice && performance.now()<noticeUntil){
+  rect(95,420,530,52,"rgba(8,17,30,.9)");
+  text(notice,360,454,20,"#ffe28b");
+ }
 }
-document.addEventListener("keydown", e => {
-  if (e.key === "1" || e.key === "3") impulsoLula();
-  if (e.key === "2") impulsoBolsonaro();
+
+function finish(who){
+ if(finished)return;
+ finished=true;
+ winner=who;
+ notice=who==="Empate"?"CHEGADA: EMPATE!":"VENCEDOR: "+who.toUpperCase()+"!";
+ noticeUntil=Infinity;
+ if(who==="Lula")speak("Vencemos a corrida! Obrigado pelo apoio!",.9,.95);
+ else if(who==="Bolsonaro")speak("Vencemos a corrida! Obrigado pelo apoio!",.75,1.05);
+}
+
+function draw(now){
+ let p=progress(now);
+ stadium(now);
+ track(now);
+
+ // Linha de chegada
+ for(let y=685;y<1160;y+=22){
+  for(let x=620;x<642;x+=11){
+   rect(x,y,11,11,((x/11+y/11)%2<1)?"#fff":"#1c2432");
+  }
+ }
+ text("META",631,675,17,"#ffffff");
+
+ // Os personagens avançam conforme a distância percorrida.
+ let xL=65+p.lula*5.15;
+ let xB=65+p.bolsonaro*5.15;
+ xL=Math.min(588,xL);
+ xB=Math.min(588,xB);
+
+ drawRunner(xL,855,"lula",now);
+ drawRunner(xB,1105,"bolsonaro",now+Math.PI*12);
+ dust(xL,855,now,"#f2c3a0");
+ dust(xB,1105,now+300,"#f2c3a0");
+
+ // Placar e acabamento
+ hud(p);
+
+ if(p.elapsed<4000&&!finished){
+  rect(175,448,370,56,"rgba(8,17,30,.88)");
+  text("PREPARAR... CORRER!",360,484,25,"#ffffff");
+ }
+
+ if(!finished){
+  if(p.lula>=100&&p.bolsonaro>=100)finish("Empate");
+  else if(p.lula>=100)finish("Lula");
+  else if(p.bolsonaro>=100)finish("Bolsonaro");
+  else if(p.elapsed>=DURATION){
+   finish(p.lula===p.bolsonaro?"Empate":
+    p.lula>p.bolsonaro?"Lula":"Bolsonaro");
+  }
+ }
+
+ if(finished){
+  rect(80,525,560,100,"rgba(8,17,30,.92)");
+  text(winner==="Empate"?"EMPATE!":"VENCEDOR: "+winner.toUpperCase(),
+   360,565,30,winner==="Lula"?"#ff6674":
+   winner==="Bolsonaro"?"#50e895":"#ffe28b");
+  text("Toque em REINICIAR para jogar novamente",360,598,15);
+ }
+ requestAnimationFrame(draw);
+}
+
+function speak(msg,pitch,rate){
+ if(!("speechSynthesis"in window))return;
+ speechSynthesis.cancel();
+ const u=new SpeechSynthesisUtterance(msg);
+ u.lang="pt-BR";u.pitch=pitch;u.rate=rate;u.volume=1;
+ const voices=speechSynthesis.getVoices();
+ u.voice=voices.find(v=>v.lang.toLowerCase().startsWith("pt-br"))||
+ voices.find(v=>v.lang.toLowerCase().startsWith("pt"))||null;
+ speechSynthesis.speak(u);
+}
+function voiceOn(){speak("A corrida presidencial vai começar!",.9,1)}
+
+function giftLula(){
+ if(finished)return;
+ boostL=Math.min(100,boostL+6);
+ notice="LULA RECEBEU UM IMPULSO!";
+ noticeUntil=performance.now()+2500;
+ speak("Valeu pela rosa! Bora correr!",.88,.95);
+}
+function giftBolsonaro(){
+ if(finished)return;
+ boostB=Math.min(100,boostB+6);
+ notice="BOLSONARO RECEBEU UM IMPULSO!";
+ noticeUntil=performance.now()+2500;
+ speak("Obrigado pelo presente! Vamos acelerar!",.75,1.05);
+}
+function chat(msg){
+ if(finished)return;
+ if(msg==="13"){
+  boostL=Math.min(100,boostL+1.5);
+  notice="COMENTÁRIO 13: IMPULSO PARA LULA!";
+ }else if(msg==="22"){
+  boostB=Math.min(100,boostB+1.5);
+  notice="COMENTÁRIO 22: IMPULSO PARA BOLSONARO!";
+ }
+ noticeUntil=performance.now()+2500;
+}
+function restart(){
+ if("speechSynthesis"in window)speechSynthesis.cancel();
+ start=performance.now();finished=false;winner="";
+ boostL=0;boostB=0;notice="";noticeUntil=0;
+}
+window.addEventListener("message",e=>{
+ const d=e.data;
+ if(!d||finished)return;
+ if(d.type==="chat")chat(String(d.message||"").trim());
+ if(d.type==="gift"){
+  if(d.target==="lula")giftLula();
+  if(d.target==="bolsonaro")giftBolsonaro();
+ }
 });
-window.addEventListener("message", e => {
-  const d = e.data;
-  if (!d || terminou) return;
-  if (d.type === "chat") {
-    if (String(d.message).trim() === "13") impulsoLula();
-    if (String(d.message).trim() === "22") impulsoBolsonaro();
-  }
-  if (d.type === "gift") {
-    if (d.target === "lula") impulsoLula();
-    if (d.target === "bolsonaro") impulsoBolsonaro();
-  }
-});
-novaCorrida();
+requestAnimationFrame(draw);
 </script>
 </body>
 </html>
