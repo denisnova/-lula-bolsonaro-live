@@ -1,177 +1,204 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Duelo de Digitação - Live</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Corrida Presidencial</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#05070c;color:white;font-family:Arial,sans-serif;text-align:center;overflow-x:hidden}
-header{padding:8px;background:#0d111a;font-size:16px;font-weight:bold;border-bottom:1px solid #222}
-.status{font-size:11px;color:#888;padding:4px}
-
-/* Top Stats Bar */
-.top-stats{display:flex;background:#111622;margin:6px 10px;border-radius:10px;padding:8px;justify-content:space-around;align-items:center;border:1px solid #222736}
-.stat-box{text-align:center}
-.stat-label{font-size:9px;color:#aaa;text-transform:uppercase;font-weight:bold}
-.stat-val{font-size:16px;font-weight:bold;font-family:monospace}
-.lead-badge{background:#c92030;padding:6px 12px;border-radius:6px;font-size:12px;font-weight:bold;color:white}
-.lead-badge.bolso-lead{background:#07854e}
-
-/* Arena Layout */
-.arena{display:flex;gap:6px;padding:6px 10px}
-.player{flex:1;min-width:0;border-radius:12px;padding:8px 6px;position:relative}
-.lula{background:#7a1118;border:2px solid #ff3b47}
-.bolso{background:#064a2c;border:2px solid #1ec978}
-
-.player-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
-.number-tag{font-size:18px;font-weight:bold;font-family:monospace}
-.crown-tag{background:#f5c518;color:#000;font-size:9px;padding:2px 5px;border-radius:4px;font-weight:bold}
-
-.main-score-box{background:#11151f;border-radius:10px;padding:8px 4px;margin-bottom:6px;border:2px solid rgba(255,255,255,0.1)}
-.score-num{font-family:monospace;font-size:42px;font-weight:bold;line-height:1}
-.lula .score-num{color:#ff4d55}
-.bolso .score-num{color:#35ff9b}
-.score-label{font-size:9px;color:#bbb;margin-top:2px;letter-spacing:1px}
-
-.sub-info{display:flex;justify-content:space-between;font-size:11px;font-weight:bold;padding:0 4px;margin-bottom:6px}
-
-/* Urna / Teclado */
-.urna{background:#f0f0f0;border-radius:8px;padding:6px;color:#111;display:flex;gap:6px;align-items:center;justify-content:center;margin-bottom:6px;position:relative}
-.urna-screen{background:#fff;border:2px solid #ccc;border-radius:4px;width:55px;height:55px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:bold;color:#111;text-align:center;padding:2px}
-.urna-keys{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;flex:1}
-.u-key{background:#222;color:#fff;border-radius:3px;font-size:10px;padding:4px 0;text-align:center;font-family:monospace}
-
-/* Mãozinha animada sobre o teclado */
-.hand-pointer {
-  position: absolute;
-  font-size: 24px;
-  bottom: -10px;
-  right: 30px;
-  display: none;
-  z-index: 5;
-  pointer-events: none;
+body{
+  margin:0;background:#101820;color:white;
+  font-family:Arial,sans-serif;text-align:center;
+  overflow:hidden
 }
-.typing .hand-pointer {
-  display: block;
-  animation: clickHand .4s infinite alternate ease-in-out;
+h1{font-size:clamp(23px,5vw,38px);margin:15px 0 5px}
+.sub{color:#cbd5e1;margin:5px}
+.pista{
+  position:relative;margin:25px 12px;
+  height:145px;border-radius:15px;
+  background:repeating-linear-gradient(
+    90deg,#333 0px,#333 35px,#444 35px,#444 70px
+  );
+  border:3px solid white;overflow:hidden
 }
-@keyframes clickHand {
-  0% { transform: translateY(0) scale(1); }
-  100% { transform: translateY(-8px) scale(1.1); }
+.pista.bolsonaro{border-color:#16c75b}
+.pista.lula{border-color:#ed3030}
+.linha{
+  position:absolute;right:22px;top:0;bottom:0;
+  border-left:5px dashed white
 }
-
-/* Timer central */
-.timer-container{background:#111622;margin:0 10px 6px 10px;border-radius:10px;padding:6px;border:1px solid #222736}
-.timer{font-size:36px;font-weight:bold;font-family:monospace;letter-spacing:2px}
-
-/* Barras e Botões */
-.bar{display:flex;height:8px;margin:0 10px 6px 10px;background:#222;border-radius:10px;overflow:hidden}
-#barL{background:#f23843;width:50%;transition:width .3s}
-#barB{background:#26d986;width:50%;transition:width .3s}
-
-.controls{display:flex;justify-content:center;gap:4px;padding:0 10px}
-button{border:0;border-radius:8px;padding:8px 10px;color:white;background:#252d3d;font-weight:bold;font-size:11px;cursor:pointer}
-button:active{transform:scale(.96)}
-.redbtn{background:#c92030}
-.greenbtn{background:#07854e}
-
-#speech{margin:6px 10px;padding:8px;background:#11151f;border-radius:8px;min-height:40px;border:1px solid #222}
-#speaker{font-size:11px;font-weight:bold;color:#f5c518;margin-bottom:2px}
-#phrase{font-size:12px}
-
-#victory{display:none;position:fixed;inset:0;z-index:10;background:#050711ed;align-items:center;justify-content:center;flex-direction:column;padding:20px}
-#victory.show{display:flex;animation:pop .4s}
-#trophy{font-size:70px;animation:bounce .5s infinite alternate}
-#winTitle{font-size:24px;font-weight:bold;margin:10px}
-#winText{font-size:16px;margin-bottom:15px}
-.confetti{position:fixed;top:-30px;z-index:12;pointer-events:none;font-size:25px;animation:fall 2.8s linear forwards}
-@keyframes pop{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:scale(1)}}
-@keyframes bounce{to{transform:translateY(-12px) rotate(6deg)}}
-@keyframes fall{to{transform:translateY(110vh) rotate(600deg);opacity:0}}
+.corredor{
+  position:absolute;left:8px;top:50%;
+  transform:translateY(-50%);
+  font-size:48px;transition:left .15s linear;
+  white-space:nowrap
+}
+.bandeira{
+  position:absolute;right:0;top:0;
+  height:100%;width:35px;
+  background:repeating-linear-gradient(
+    0deg,white 0 10px,#111 10px 20px
+  )
+}
+.nome{font-size:20px;font-weight:bold;margin-top:10px}
+.lula-texto{color:#ff5b5b}
+.bolsonaro-texto{color:#39e878}
+#status{font-size:19px;margin:20px 8px;min-height:28px}
+button{
+  border:0;border-radius:10px;padding:13px 16px;
+  margin:5px;font-weight:bold;font-size:15px;
+  color:white;background:#2563eb
+}
+.vermelho{background:#dc2626}
+.verde{background:#15803d}
+.secundario{background:#475569}
+#fim{font-size:28px;font-weight:bold;margin:15px}
 </style>
 </head>
 <body>
 
-<header>⌨️ DUELO DE DIGITAÇÃO - LIVE</header>
-<div class="status" id="status">Conectando ao servidor...</div>
+<h1>🏁 CORRIDA PRESIDENCIAL 🏁</h1>
+<p class="sub">Rosas impulsionam Lula • Presentes impulsionam Bolsonaro</p>
 
-<div class="top-stats">
- <div class="stat-box">
-  <div class="stat-label">Total</div>
-  <div class="stat-val" id="totalVotes">0</div>
- </div>
- <div class="stat-box">
-  <div class="stat-label">Diferença</div>
-  <div class="stat-val" id="diffVotes">0</div>
- </div>
- <div>
-  <div id="leadBadge" class="lead-badge">EMPATE</div>
- </div>
+<div class="nome lula-texto">🔴 LULA</div>
+<div class="pista lula">
+  <div class="linha"></div>
+  <div class="corredor" id="corredorLula">🏃‍♂️</div>
 </div>
 
-<div class="arena">
- <!-- LADO LULA (13) -->
- <div class="player lula" id="playerL">
-  <div class="player-header">
-   <span class="number-tag">13</span>
-   <span class="crown-tag" id="crownL" style="display:none">👑 NA FRENTE</span>
-  </div>
-  <div class="main-score-box">
-   <div class="score-num" id="scoreL">0</div>
-   <div class="score-label">PONTOS</div>
-  </div>
-  <div class="sub-info">
-   <span id="pctL">50.0%</span>
-   <span id="giftsL">🎁 0 presentes</span>
-  </div>
-  <div class="urna" id="urnaL">
-   <div class="urna-screen" id="screenL">13</div>
-   <div class="urna-keys">
-    <div class="u-key">1</div><div class="u-key">3</div><div class="u-key">OK</div>
-   </div>
-   <div class="hand-pointer">👆</div>
-  </div>
-  <button class="redbtn" onclick="testGift('lula')">🎁 Testar Rosa (13)</button>
- </div>
-
- <!-- LADO BOLSONARO (22) -->
- <div class="player bolso" id="playerB">
-  <div class="player-header">
-   <span class="number-tag">22</span>
-   <span class="crown-tag" id="crownB" style="display:none">👑 NA FRENTE</span>
-  </div>
-  <div class="main-score-box">
-   <div class="score-num" id="scoreB">0</div>
-   <div class="score-label">PONTOS</div>
-  </div>
-  <div class="sub-info">
-   <span id="pctB">50.0%</span>
-   <span id="giftsB">🎁 0 presentes</span>
-  </div>
-  <div class="urna" id="urnaB">
-   <div class="urna-screen" id="screenB">22</div>
-   <div class="urna-keys">
-    <div class="u-key">2</div><div class="u-key">2</div><div class="u-key">OK</div>
-   </div>
-   <div class="hand-pointer">👆</div>
-  </div>
-  <button class="greenbtn" onclick="testGift('bolsonaro')">🎁 Testar TikTok (22)</button>
- </div>
+<div class="nome bolsonaro-texto">🟢 BOLSONARO</div>
+<div class="pista bolsonaro">
+  <div class="linha"></div>
+  <div class="corredor" id="corredorBolsonaro">🏃‍♂️</div>
 </div>
 
-<div class="timer-container">
- <div class="timer" id="timer">05:00</div>
-</div>
-<div class="bar"><div id="barL"></div><div id="barB"></div></div>
+<div id="status">A corrida começou! Digite 13 para Lula ou 22 para Bolsonaro.</div>
+<div id="fim"></div>
 
-<div class="controls">
- <button onclick="enableVoice()">🔊 Voz</button>
- <button onclick="newRound()">↻ Reiniciar</button>
- <button onclick="fullScreen()">⛶ Tela Cheia</button>
+<div>
+  <button class="vermelho" onclick="impulsoLula()">🌹 Testar rosa — Lula</button>
+  <button class="verde" onclick="impulsoBolsonaro()">🎁 Testar presente — Bolsonaro</button>
+</div>
+<div>
+  <button class="secundario" onclick="novaCorrida()">🔄 Nova corrida</button>
+  <button class="secundario" onclick="ativarVoz()">🔊 Ativar voz</button>
 </div>
 
-<div id="speech">
- <div id="speaker">🎤 COMENTÁRIO DA LIVE</div>
- <div id="phrase">Envie um presente para
-  
+<script>
+const DURACAO = 5 * 60 * 1000;
+const META = 100;
+let lula = 0;
+let bolsonaro = 0;
+let inicio = Date.now();
+let terminou = false;
+let animacao;
+let ultimaFala = 0;
+
+function falarLula(texto) {
+  falar(texto, 0.88, 0.95);
+}
+function falarBolsonaro(texto) {
+  falar(texto, 0.75, 1.05);
+}
+function falar(texto, tom, velocidade) {
+  if (!("speechSynthesis" in window)) return;
+  speechSynthesis.cancel();
+  const voz = new SpeechSynthesisUtterance(texto);
+  voz.lang = "pt-BR";
+  voz.pitch = tom;
+  voz.rate = velocidade;
+  voz.volume = 1;
+  const vozes = speechSynthesis.getVoices();
+  voz.voice = vozes.find(v => v.lang.toLowerCase().startsWith("pt-br")) ||
+              vozes.find(v => v.lang.toLowerCase().startsWith("pt")) || null;
+  speechSynthesis.speak(voz);
+}
+function ativarVoz() {
+  falar("A corrida presidencial vai começar!", 0.9, 1);
+}
+function atualizar() {
+  if (terminou) return;
+
+  const decorrido = Date.now() - inicio;
+  if (decorrido >= DURACAO) {
+    lula = Math.max(lula, 0);
+    bolsonaro = Math.max(bolsonaro, 0);
+    terminou = true;
+    finalizar(lula >= bolsonaro ? "Lula" : "Bolsonaro");
+    return;
+  }
+
+  // Corrida automática: ambos avançam gradualmente.
+  lula += 0.025 + Math.random() * 0.025;
+  bolsonaro += 0.025 + Math.random() * 0.025;
+
+  desenhar();
+  if (lula >= META) finalizar("Lula");
+  else if (bolsonaro >= META) finalizar("Bolsonaro");
+  else animacao = requestAnimationFrame(atualizar);
+}
+function desenhar() {
+  document.getElementById("corredorLula").style.left =
+    Math.min(88, lula * 0.88) + "%";
+  document.getElementById("corredorBolsonaro").style.left =
+    Math.min(88, bolsonaro * 0.88) + "%";
+}
+function impulsoLula() {
+  if (terminou) return;
+  lula = Math.min(META, lula + 8);
+  document.getElementById("status").textContent = "🌹 Lula recebeu um impulso!";
+  falarLula("Valeu pela rosa! Bora correr!");
+  desenhar();
+  if (lula >= META) finalizar("Lula");
+}
+function impulsoBolsonaro() {
+  if (terminou) return;
+  bolsonaro = Math.min(META, bolsonaro + 8);
+  document.getElementById("status").textContent = "🎁 Bolsonaro recebeu um impulso!";
+  falarBolsonaro("Obrigado pelo presente! Vamos acelerar!");
+  desenhar();
+  if (bolsonaro >= META) finalizar("Bolsonaro");
+}
+function finalizar(vencedor) {
+  if (terminou && document.getElementById("fim").textContent) return;
+  terminou = true;
+  cancelAnimationFrame(animacao);
+  document.getElementById("fim").textContent =
+    "🏆 VENCEDOR: " + vencedor.toUpperCase() + " 🎉";
+  document.getElementById("status").textContent = "Fim da corrida!";
+  if (vencedor === "Lula") falarLula("Vencemos a corrida! Obrigado pelo apoio!");
+  else falarBolsonaro("Vencemos a corrida! Obrigado pelo apoio!");
+}
+function novaCorrida() {
+  cancelAnimationFrame(animacao);
+  if ("speechSynthesis" in window) speechSynthesis.cancel();
+  lula = 0;
+  bolsonaro = 0;
+  inicio = Date.now();
+  terminou = false;
+  document.getElementById("fim").textContent = "";
+  document.getElementById("status").textContent = "A corrida começou!";
+  desenhar();
+  animacao = requestAnimationFrame(atualizar);
+}
+document.addEventListener("keydown", e => {
+  if (e.key === "1" || e.key === "3") impulsoLula();
+  if (e.key === "2") impulsoBolsonaro();
+});
+window.addEventListener("message", e => {
+  const d = e.data;
+  if (!d || terminou) return;
+  if (d.type === "chat") {
+    if (String(d.message).trim() === "13") impulsoLula();
+    if (String(d.message).trim() === "22") impulsoBolsonaro();
+  }
+  if (d.type === "gift") {
+    if (d.target === "lula") impulsoLula();
+    if (d.target === "bolsonaro") impulsoBolsonaro();
+  }
+});
+novaCorrida();
+</script>
+</body>
+</html>
