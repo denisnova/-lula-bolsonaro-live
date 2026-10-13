@@ -3,364 +3,378 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Corrida Presidencial - Live TikTok</title>
+<title>Corrida Presidencial - TikTok Live</title>
 <style>
 *{box-sizing:border-box;user-select:none;-webkit-user-select:none}
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#050a14;font-family:'Arial Black',Gadget,sans-serif}
 canvas{display:block;width:100%;height:100%}
-
-#controls{
- position:fixed;bottom:0;left:0;right:0;
- padding:12px 10px calc(12px + env(safe-area-inset-bottom));
- display:flex;flex-wrap:wrap;justify-content:center;gap:8px;
- background:rgba(5,10,20,0.96);border-top:2px solid #1a2942;z-index:100;
-}
-button{
- border:0;border-radius:8px;padding:10px 14px;color:white;font-weight:bold;
- background:#283854;font-size:12px;cursor:pointer;box-shadow:0 3px 0 #152033;
- transition:transform 0.1s ease;
-}
-button:active{transform:translateY(2px);box-shadow:0 1px 0 #152033}
-.red{background:#e62238;box-shadow:0 3px 0 #9e1122}
-.green{background:#11a855;box-shadow:0 3px 0 #0a6934}
 </style>
 </head>
 <body>
 <canvas id="game"></canvas>
 
-<div id="controls">
-<button class="red" onclick="giftLula('Rosa', 30)">🌹 ROSA (+30% LULA)</button>
-<button class="green" onclick="giftBolsonaro('TikTok', 30)">🎵 TIKTOK (+30% BOLSO)</button>
-<button class="red" onclick="giftLula('Rosa Dupla', 60)">🌹 ROSA DUPLA (+60%)</button>
-<button class="green" onclick="giftBolsonaro('TikTok Gigante', 60)">🎵 TIKTOK GIGANTE (+60%)</button>
-<button onclick="restart()">↻ REINICIAR</button>
-</div>
-
 <script>
-const canvas=document.querySelector("#game");
-const c=canvas.getContext("2d");
+const canvas = document.querySelector("#game");
+const c = canvas.getContext("2d");
 
-// Resolução interna fixa de alta definição (Proporção Vertical 9:16 para Live)
-const W=720,H=1280;
-const DURATION=60000; // 60 segundos por rodada
+// Resolução vertical padrão TikTok Live (720x1280)
+const W = 720, H = 1280;
+const ROUND_DURATION = 90000; // 90 segundos para acompanhar a pista mais longa
 
-let start=performance.now(),finished=false,winner="";
-let speedL=44, speedB=88; // KM/H
-let distL=10, distB=13;   // % de progresso
-let boostTextEffects=[];
-let recentGifts=[];
+let startTime = performance.now();
+let isFinished = false;
+let winnerText = "";
+let speedLula = 32, speedBolso = 64; // Velocidades base calibradas para pista longa
+let progressLula = 4, progressBolso = 6;
+let boostEffects = [];
+let recentGiftsLog = [];
+let autoRestartTimeout = null;
 
-function resize(){
- const d=Math.min(window.devicePixelRatio||1, 3);
- canvas.width=window.innerWidth*d;
- canvas.height=window.innerHeight*d;
- c.setTransform(canvas.width/W, 0, 0, canvas.height/H, 0, 0);
+function handleResize() {
+    const scaleFactor = Math.min(window.devicePixelRatio || 1, 3);
+    canvas.width = window.innerWidth * scaleFactor;
+    canvas.height = window.innerHeight * scaleFactor;
+    c.setTransform(canvas.width / W, 0, 0, canvas.height / H, 0, 0);
 }
-window.addEventListener("resize", resize);
-resize();
+window.addEventListener("resize", handleResize);
+handleResize();
 
-function rect(x,y,w,h,color,border=null,borderW=2){
- c.fillStyle=color;
- c.fillRect(x,y,w,h);
- if(border){
-  c.strokeStyle=border;
-  c.lineWidth=borderW;
-  c.strokeRect(x,y,w,h);
- }
-}
-
-function text(s,x,y,size,color="#fff",align="center",strokeColor="#000",strokeW=4){
- c.font=`900 ${size}px 'Arial Black', Impact, sans-serif`;
- c.textAlign=align;
- if(strokeColor){
-  c.strokeStyle=strokeColor;
-  c.lineWidth=strokeW;
-  c.strokeText(s,x,y);
- }
- c.fillStyle=color;
- c.fillText(s,x,y);
+function drawRect(x, y, w, h, fillColor, strokeColor = null, strokeWidth = 2) {
+    c.fillStyle = fillColor;
+    c.fillRect(x, y, w, h);
+    if (strokeColor) {
+        c.strokeStyle = strokeColor;
+        c.lineWidth = strokeWidth;
+        c.strokeRect(x, y, w, h);
+    }
 }
 
-function line(x1,y1,x2,y2,color,width){
- c.strokeStyle=color;
- c.lineWidth=width;
- c.lineCap="round";
- c.beginPath();
- c.moveTo(x1,y1);
- c.lineTo(x2,y2);
- c.stroke();
+function drawText(textStr, x, y, size, color = "#fff", align = "center", strokeColor = "#000", strokeWidth = 4) {
+    c.font = `900 ${size}px 'Arial Black', Impact, sans-serif`;
+    c.textAlign = align;
+    if (strokeColor) {
+        c.strokeStyle = strokeColor;
+        c.lineWidth = strokeWidth;
+        c.strokeText(textStr, x, y);
+    }
+    c.fillStyle = color;
+    c.fillText(textStr, x, y);
 }
 
-// Estádio e Arquibancada com torcida animada
-function drawBackground(t){
- let sky=c.createLinearGradient(0,0,0,500);
- sky.addColorStop(0,"#182d53");
- sky.addColorStop(1,"#4b72a3");
- rect(0,0,W,500,sky);
-
- rect(0,180,W,220,"#1f2838");
- const crowdColors=["#e53935","#43a047","#1e88e5","#fdd835","#ffffff","#fb8c00"];
- for(let r=0;r<6;r++){
-  for(let col=0;col<40;col++){
-   let x=col*19 + ((r%2)*9) - ((t*.02)%19);
-   let y=200 + r*28;
-   let color=crowdColors[(col*3 + r*7)%crowdColors.length];
-   rect(x,y,10,12,color);
-   rect(x+2,y-5,6,6,"#f5c29b");
-  }
- }
- rect(0,370,W,25,"#0b1018");
- rect(0,395,W,10,"#ffffff");
+function drawLine(x1, y1, x2, y2, color, width) {
+    c.strokeStyle = color;
+    c.lineWidth = width;
+    c.lineCap = "round";
+    c.beginPath();
+    c.moveTo(x1, y1);
+    c.lineTo(x2, y2);
+    c.stroke();
 }
 
-// Pista de corrida profissional
-function drawTrack(t){
- rect(0,405,W,550,"#b84c38");
- for(let i=0;i<6;i++){
-  let y=420+i*90;
-  rect(0,y,W,4,"rgba(255,255,255,0.7)");
- }
- let shift=(t*.25)%180;
- for(let i=-2;i<6;i++){
-  let x=i*180 - shift;
-  line(x,405,x+100,955,"rgba(255,255,255,0.15)",6);
- }
+// Estádio, refletores e arquibancadas
+function renderStadium(timestamp) {
+    let skyGradient = c.createLinearGradient(0, 0, 0, 480);
+    skyGradient.addColorStop(0, "#101d35");
+    skyGradient.addColorStop(0.5, "#233d64");
+    skyGradient.addColorStop(1, "#52759e");
+    drawRect(0, 0, W, 480, skyGradient);
+
+    for (let i = 0; i < 4; i++) {
+        let rx = 60 + i * 195;
+        drawRect(rx, 35, 70, 12, "#d8e9ff");
+        drawRect(rx + 10, 47, 50, 6, "#fff4c5");
+        c.fillStyle = "rgba(255, 248, 200, 0.03)";
+        c.beginPath();
+        c.moveTo(rx, 47);
+        c.lineTo(rx + 70, 47);
+        c.lineTo(rx + 150, 360);
+        c.lineTo(rx - 80, 360);
+        c.closePath();
+        c.fill();
+    }
+
+    drawRect(0, 160, W, 225, "#182333");
+    const seatColors = ["#e53935", "#43a047", "#1e88e5", "#fdd835", "#ffffff", "#fb8c00", "#8e24aa"];
+    for (let row = 0; row < 7; row++) {
+        for (let col = 0; col < 42; col++) {
+            let seatX = col * 18 + ((row % 2) * 9) - ((timestamp * 0.015) % 18);
+            let seatY = 175 + row * 28;
+            let colorIndex = (col * 5 + row * 9) % seatColors.length;
+            drawRect(seatX, seatY, 10, 13, seatColors[colorIndex]);
+            drawRect(seatX + 2, seatY - 6, 6, 6, "#f5c29b");
+        }
+    }
+
+    drawRect(0, 370, W, 20, "#0b1018");
+    drawRect(0, 390, W, 12, "#ffffff");
 }
 
-// Desenho otimizado e detalhado dos corredores
-function drawRunner(x,y,team,t,isFirst){
- c.save();
- c.translate(x,y);
- c.scale(1.25,1.25);
+// Pista de corrida MUITO MAIS LONGA E EXTENSA
+function renderExtendedTrack(timestamp) {
+    drawRect(0, 402, W, 680, "#b84c38"); // Altura da pista aumentada para dar mais espaço de percurso
 
- const isLula=team==="lula";
- const shirtColor=isLula?"#d62828":"#1b8a4f";
- const pantsColor=isLula?"#9e1b1b":"#125933";
- const runCycle=Math.sin(t*0.025);
+    for (let i = 0; i < 8; i++) {
+        let lineY = 415 + i * 82;
+        drawRect(0, lineY, W, 4, "rgba(255, 255, 255, 0.75)");
+    }
 
- // Sombra no solo
- c.fillStyle="rgba(0,0,0,0.4)";
- c.beginPath();
- c.ellipse(0,10,36,9,0,0,Math.PI*2);
- c.fill();
-
- // Pernas
- line(-8,-10,-18+runCycle*18,10,pantsColor,12);
- line(8,-10,18-runCycle*18,10,pantsColor,12);
-
- // Tênis esportivos
- rect(-24+runCycle*18,8,14,7,"#ffffff");
- rect(12-runCycle*18,8,14,7,"#ffffff");
-
- // Tronco
- rect(-18,-55,36,45,shirtColor,isLula?"#ff6b6b":"#4ae38d",2);
- if(!isLula){
-  rect(-18,-55,36,8,"#f3c623");
- }else{
-  text("★",0,-30,16,"#ffffff","center",null);
- }
-
- // Braços
- line(-18,-45,-28-runCycle*12,-25,shirtColor,10);
- line(18,-45,28+runCycle*12,-25,shirtColor,10);
-
- // Cabeça Caricatura
- c.fillStyle="#f3be98";
- c.beginPath();
- c.arc(0,-80,28,0,Math.PI*2);
- c.fill();
- c.strokeStyle="#222";
- c.lineWidth=2;
- c.stroke();
-
- if(isLula){
-  c.fillStyle="#e0e0e0";
-  c.beginPath();c.arc(0,-92,29,Math.PI,Math.PI*2);c.fill();
-  c.beginPath();c.arc(0,-75,28,0.2,Math.PI-0.2);c.fill();
-  rect(-28,-98,56,8,"#d62828");
- }else{
-  c.fillStyle="#3d2b1f";
-  c.beginPath();c.arc(0,-95,28,Math.PI*0.8,Math.PI*2.2);c.fill();
-  rect(-18,-84,14,10,"rgba(0,0,0,0.1)","#333",2);
-  rect(4,-84,14,10,"rgba(0,0,0,0.1)","#333",2);
-  line(-4,-79,4,-79,"#333",2);
- }
-
- rect(-12,-82,5,5,"#111",null);
- rect(7,-82,5,5,"#111",null);
- line(-8,-68,8,-68,"#924040",3);
-
- c.restore();
-
- // Etiqueta superior do corredor
- let tagBg=isFirst?"#f3c623":"#d62828";
- let tagText=isFirst?(isLula?"1º  13 LULA":"1º  22 BOLSO"):(isLula?"2º  13 LULA":"2º  22 BOLSO");
- rect(x-68,y-175,136,26,tagBg,"#ffffff",2);
- text(tagText,x,y-156,13,"#000000","center","#ffffff",1);
+    let trackShift = (timestamp * 0.35) % 200;
+    for (let i = -2; i < 6; i++) {
+        let posX = i * 200 - trackShift;
+        drawLine(posX, 402, posX + 120, 1082, "rgba(255, 255, 255, 0.12)", 8);
+    }
 }
 
-// Menu lateral com Rosa para o Lula e TikTok para o Bolsonaro
-function drawGiftsMenu(){
- drawGiftIcon(35, 340, "🌹", "ROSA", "#e62238");
- drawGiftIcon(35, 430, "🌹", "ROSA VELOZ", "#e62238");
- drawGiftIcon(35, 520, "🌹", "ROSA SUP", "#e62238");
+// Corredores detalhados
+function renderRunnerCaricature(x, y, teamType, timestamp, isLeader) {
+    c.save();
+    c.translate(x, y);
+    c.scale(1.25, 1.25);
 
- drawGiftIcon(W-35, 340, "🎵", "TIKTOK", "#11a855");
- drawGiftIcon(W-35, 430, "🎵", "TIKTOK VELOZ", "#11a855");
- drawGiftIcon(W-35, 520, "🎵", "TIKTOK SUP", "#11a855");
+    const isLula = teamType === "lula";
+    const shirtColor = isLula ? "#d62828" : "#1b8a4f";
+    const pantsColor = isLula ? "#9e1b1b" : "#125933";
+    const runningCycle = Math.sin(timestamp * 0.028);
+
+    c.fillStyle = "rgba(0, 0, 0, 0.45)";
+    c.beginPath();
+    c.ellipse(0, 12, 38, 10, 0, 0, Math.PI * 2);
+    c.fill();
+
+    drawLine(-8, -10, -20 + runningCycle * 20, 12, pantsColor, 13);
+    drawLine(8, -10, 20 - runningCycle * 20, 12, pantsColor, 13);
+
+    drawRect(-26 + runningCycle * 20, 10, 15, 8, "#ffffff");
+    drawRect(11 - runningCycle * 20, 10, 15, 8, "#ffffff");
+
+    drawRect(-18, -58, 36, 48, shirtColor, isLula ? "#ff6b6b" : "#4ae38d", 2);
+    if (!isLula) {
+        drawRect(-18, -58, 36, 9, "#f3c623");
+    } else {
+        drawText("★", 0, -31, 17, "#ffffff", "center", null);
+    }
+
+    drawLine(-18, -48, -30 - runningCycle * 14, -26, shirtColor, 11);
+    drawLine(18, -48, 30 + runningCycle * 14, -26, shirtColor, 11);
+
+    c.fillStyle = "#f3be98";
+    c.beginPath();
+    c.arc(0, -82, 29, 0, Math.PI * 2);
+    c.fill();
+    c.strokeStyle = "#1a1a1a";
+    c.lineWidth = 2;
+    c.stroke();
+
+    if (isLula) {
+        c.fillStyle = "#e0e0e0";
+        c.beginPath(); c.arc(0, -95, 30, Math.PI, Math.PI * 2); c.fill();
+        c.beginPath(); c.arc(0, -76, 29, 0.2, Math.PI - 0.2); c.fill();
+        drawRect(-29, -101, 58, 8, "#d62828");
+    } else {
+        c.fillStyle = "#3d2b1f";
+        c.beginPath(); c.arc(0, -97, 29, Math.PI * 0.8, Math.PI * 2.2); c.fill();
+        drawRect(-19, -86, 14, 10, "rgba(0,0,0,0.15)", "#333", 2);
+        drawRect(5, -86, 14, 10, "rgba(0,0,0,0.15)", "#333", 2);
+        drawLine(-5, -81, 5, -81, "#333", 2);
+    }
+
+    drawRect(-13, -84, 5, 5, "#111", null);
+    drawRect(8, -84, 5, 5, "#111", null);
+    drawLine(-9, -70, 9, -70, "#924040", 3);
+
+    c.restore();
+
+    let tagBackground = isLeader ? "#f3c623" : "#d62828";
+    let tagMessage = isLeader ? (isLula ? "1º  13 LULA" : "1º  22 BOLSO") : (isLula ? "2º  13 LULA" : "2º  22 BOLSO");
+    drawRect(x - 72, y - 185, 144, 28, tagBackground, "#ffffff", 2);
+    drawText(tagMessage, x, y - 165, 14, "#000000", "center", "#ffffff", 1);
 }
 
-function drawGiftIcon(x,y,emoji,label,color){
- c.save();
- c.fillStyle="rgba(0,0,0,0.6)";
- c.beginPath();c.arc(x,y,25,0,Math.PI*2);c.fill();
- c.strokeStyle=color;c.lineWidth=3;c.stroke();
- text(emoji,x,y+8,24,"#fff","center",null);
+// Menu lateral com ícones de Rosa e TikTok
+function renderGiftsSidebar() {
+    renderSingleGiftBadge(40, 360, "🌹", "ROSA", "#e62238");
+    renderSingleGiftBadge(40, 455, "🌹", "ROSA VELOZ", "#e62238");
+    renderSingleGiftBadge(40, 550, "🌹", "ROSA SUP", "#e62238");
 
- if(x<W/2){
-  text(label,x+35,y+5,12,color,"left","#000",3);
- }else{
-  text(label,x-35,y+5,12,color,"right","#000",3);
- }
- c.restore();
+    renderSingleGiftBadge(W - 40, 360, "🎵", "TIKTOK", "#11a855");
+    renderSingleGiftBadge(W - 40, 455, "🎵", "TIKTOK VELOZ", "#11a855");
+    renderSingleGiftBadge(W - 40, 550, "🎵", "TIKTOK SUP", "#11a855");
 }
 
-// Placar Superior estilo Arcade
-function drawTopHUD(elapsed){
- rect(0,0,W,140,"#090e17");
+function renderSingleGiftBadge(x, y, emojiSymbol, labelText, themeColor) {
+    c.save();
+    c.fillStyle = "rgba(0, 0, 0, 0.65)";
+    c.beginPath();
+    c.arc(x, y, 26, 0, Math.PI * 2);
+    c.fill();
+    c.strokeStyle = themeColor;
+    c.lineWidth = 3;
+    c.stroke();
+    drawText(emojiSymbol, x, y + 9, 25, "#fff", "center", null);
 
- text("CORRIDA PRESIDENCIAL",220,42,24,"#ffffff","#000",5);
-
- rect(W-140,12,125,44,"#f3c623","#000",3);
- let remainSec=Math.max(0,Math.ceil((DURATION-elapsed)/1000));
- text(`00:${String(remainSec).padStart(2,'0')}s`,W-77,43,26,"#000000","center",null);
-
- const lulaFirst=distL>=distB;
-
- drawPlayerCard(15, 55, lulaFirst?"1º":"2º", "13 LULA", distL, speedL, "#d62828", lulaFirst);
- drawPlayerCard(15, 98, lulaFirst?"2º":"1º", "22 BOLSO", distB, speedB, "#11a855", !lulaFirst);
-
- if(recentGifts.length>0){
-  let g=recentGifts[recentGifts.length-1];
-  rect(15,148,420,38,"rgba(10,18,32,0.95)","#283b5e",2);
-  text(`${g.user} enviou ${g.gift} x${g.count}`,25,172,13,"#ffffff","left","#000",2);
-  text(`IMPULSO - ${g.target.toUpperCase()}`,300,172,12,"#f3c623","left","#000",2);
- }
+    if (x < W / 2) {
+        drawText(labelText, x + 38, y + 5, 12, themeColor, "left", "#000", 3);
+    } else {
+        drawText(labelText, x - 38, y + 5, 12, themeColor, "right", "#000", 3);
+    }
+    c.restore();
 }
 
-function drawPlayerCard(x,y,pos,name,pct,speed,color,isLead){
- rect(x,y,W-30,36,"#162032","#000",2);
+// Placar superior arcade
+function renderTopArcadeHUD(elapsedTimeMs) {
+    drawRect(0, 0, W, 145, "#090e17");
+    drawText("CORRIDA PRESIDENCIAL", W / 2, 45, 26, "#ffffff", "center", "#000", 5);
 
- rect(x+4,y+4,28,28,isLead?"#f3c623":"#3a4d6e");
- text(pos,x+18,y+24,14,isLead?"#000":"#fff","center",null);
+    drawRect(W - 145, 15, 130, 46, "#f3c623", "#000", 3);
+    let secondsLeft = Math.max(0, Math.ceil((ROUND_DURATION - elapsedTimeMs) / 1000));
+    drawText(`00:${String(secondsLeft).padStart(2, '0')}s`, W - 80, 47, 28, "#000000", "center", null);
 
- text(name,x+95,y+24,15,color,"left","#000",3);
+    const isLulaAhead = progressLula >= progressBolso;
 
- rect(x+170,y+10,340,16,"#0a0f18");
- rect(x+170,y+10,340*(pct/100),16,color);
+    renderCompetitorCard(15, 60, isLulaAhead ? "1º" : "2º", "13 LULA", progressLula, speedLula, "#d62828", isLulaAhead);
+    renderCompetitorCard(15, 102, isLulaAhead ? "2º" : "1º", "22 BOLSO", progressBolso, speedBolso, "#11a855", !isLulaAhead);
 
- text(`${Math.floor(pct)}%`,x+530,y+24,15,"#ffffff","right","#000",2);
- text(`${speed} KM/H`,x+620,y+24,13,"#f3c623","right","#000",2);
+    if (recentGiftsLog.length > 0) {
+        let lastGift = recentGiftsLog[recentGiftsLog.length - 1];
+        drawRect(15, 152, 440, 38, "rgba(10, 18, 32, 0.95)", "#283b5e", 2);
+        drawText(`${lastGift.user} enviou ${lastGift.gift} x${lastGift.count}`, 25, 177, 13, "#ffffff", "left", "#000", 2);
+        drawText(`IMPULSO - ${lastGift.target.toUpperCase()}`, 310, 177, 12, "#f3c623", "left", "#000", 2);
+    }
+}
+
+function renderCompetitorCard(x, y, positionText, nameText, percentageVal, speedVal, cardColor, isLeaderCard) {
+    drawRect(x, y, W - 30, 38, "#162032", "#000", 2);
+
+    drawRect(x + 4, y + 4, 30, 30, isLeaderCard ? "#f3c623" : "#3a4d6e");
+    drawText(positionText, x + 19, y + 25, 14, isLeaderCard ? "#000" : "#fff", "center", null);
+
+    drawText(nameText, x + 100, y + 26, 15, cardColor, "left", "#000", 3);
+
+    drawRect(x + 180, y + 11, 320, 16, "#0a0f18");
+    drawRect(x + 180, y + 11, 320 * (percentageVal / 100), 16, cardColor);
+
+    drawText(`${Math.floor(percentageVal)}%`, x + 535, y + 26, 15, "#ffffff", "right", "#000", 2);
+    drawText(`${speedVal} KM/H`, x + 635, y + 26, 13, "#f3c623", "right", "#000", 2);
 }
 
 // Medidor de distância inferior
-function drawDistanceMeter(){
- let diff=Math.abs(distL-distB)*2.5;
- rect(40,1050,W-80,30,"rgba(0,0,0,0.6)","#334466",2);
- line(60,1065,W-60,1065,"#f3c623",3);
- line(60,1058,60,1072,"#f3c623",3);
- line(W-60,1058,W-60,1072,"#f3c623",3);
+function renderDistanceMeterWidget() {
+    let metersGap = Math.abs(progressLula - progressBolso) * 4.5;
+    drawRect(45, 1110, W - 90, 32, "rgba(0, 0, 0, 0.65)", "#334466", 2);
+    drawLine(70, 1126, W - 70, 1126, "#f3c623", 3);
+    drawLine(70, 1118, 70, 1134, "#f3c623", 3);
+    drawLine(W - 70, 1118, W - 70, 1134, "#f3c623", 3);
 
- text(`+${diff.toFixed(1)} m`,W/2,1071,16,"#4ae38d","center","#000",3);
+    drawText(`+${metersGap.toFixed(1)} m`, W / 2, 1132, 17, "#4ae38d", "center", "#000", 3);
 }
 
-function drawBoostEffects(now){
- for(let i=boostTextEffects.length-1;i>=0;i--){
-  let ef=boostTextEffects[i];
-  let age=now-ef.start;
-  if(age>1800){
-   boostTextEffects.splice(i,1);
-   continue;
-  }
-  let alpha=1 - (age/1800);
-  let y=ef.y - (age*0.05);
+// Efeitos de texto flutuantes modificados para exibir "+5% IMPULSO" conforme solicitado
+function renderFloatingBoostEffects(currentTime) {
+    for (let i = boostEffects.length - 1; i >= 0; i--) {
+        let fx = boostEffects[i];
+        let lifespan = currentTime - fx.startTime;
+        if (lifespan > 1800) {
+            boostEffects.splice(i, 1);
+            continue;
+        }
+        let alphaValue = 1 - (lifespan / 1800);
+        let currentY = fx.posY - (lifespan * 0.06);
 
-  c.save();
-  c.globalAlpha=alpha;
-  text(ef.msg, ef.x, y, 28, ef.color, "center", "#000000", 6);
-  c.restore();
- }
+        c.save();
+        c.globalAlpha = alphaValue;
+        drawText(fx.message, fx.posX, currentY, 26, fx.color, "center", "#000000", 5);
+        c.restore();
+    }
 }
 
-function giftLula(giftName="Rosa", boostVal=30){
- if(finished)return;
- distL=Math.min(100, distL+boostVal*0.25);
- speedL+=12;
- boostTextEffects.push({
-  x:200, y:550, msg:`+${boostVal}% IMPULSO`, color:"#4ae38d", start:performance.now()
- });
- recentGifts.push({user:"Apoiador 13", gift:giftName, count:1, target:"13 Lula"});
+// Simulação de interações e chat ajustada estritamente para +5% de impulso
+function simulateRandomLiveActivity(timestamp) {
+    if (isFinished) return;
+    
+    if (!window.lastSimulatedGift || timestamp - window.lastSimulatedGift > 3500) {
+        window.lastSimulatedGift = timestamp;
+        if (Math.random() > 0.5) {
+            progressLula = Math.min(100, progressLula + 5); // Impulso de exatos 5%
+            speedLula += 4;
+            boostEffects.push({ posX: 210, posY: 600, message: "+5% IMPULSO", color: "#4ae38d", startTime: timestamp });
+            recentGiftsLog.push({ user: "Chat_13", gift: "Rosa 🌹", count: 1, target: "13 Lula" });
+        } else {
+            progressBolso = Math.min(100, progressBolso + 5); // Impulso de exatos 5%
+            speedBolso += 4;
+            boostEffects.push({ posX: 510, posY: 720, message: "+5% IMPULSO", color: "#4ae38d", startTime: timestamp });
+            recentGiftsLog.push({ user: "Chat_22", gift: "TikTok 🎵", count: 1, target: "22 Bolsonaro" });
+        }
+    }
 }
 
-function giftBolsonaro(giftName="TikTok", boostVal=30){
- if(finished)return;
- distB=Math.min(100, distB+boostVal*0.25);
- speedB+=12;
- boostTextEffects.push({
-  x:520, y:650, msg:`+${boostVal}% IMPULSO`, color:"#4ae38d", start:performance.now()
- });
- recentGifts.push({user:"Apoiador 22", gift:giftName, count:1, target:"22 Bolsonaro"});
+function resetRoundAutomatically() {
+    startTime = performance.now();
+    isFinished = false;
+    winnerText = "";
+    progressLula = 4;
+    progressBolso = 6;
+    speedLula = 32;
+    speedBolso = 64;
+    boostEffects = [];
+    recentGiftsLog = [];
+    if (autoRestartTimeout) {
+        clearTimeout(autoRestartTimeout);
+        autoRestartTimeout = null;
+    }
 }
 
-function restart(){
- start=performance.now();finished=false;winner="";
- distL=10;distB=13;
- speedL=44;speedB=88;
- boostTextEffects=[];recentGifts=[];
+function gameLoop(timestamp) {
+    let elapsedTime = timestamp - startTime;
+
+    if (!isFinished) {
+        // Velocidade de avanço suave e progressiva na pista longa
+        progressLula = Math.min(100, progressLula + (speedLula * 0.00045));
+        progressBolso = Math.min(100, progressBolso + (speedBolso * 0.00045));
+
+        if (speedLula > 32) speedLula -= 0.04;
+        if (speedBolso > 64) speedBolso -= 0.04;
+
+        simulateRandomLiveActivity(timestamp);
+
+        if (progressLula >= 100 || progressBolso >= 100 || elapsedTime >= ROUND_DURATION) {
+            isFinished = true;
+            winnerText = progressLula > progressBolso ? "13 LULA VENCEU!" : (progressBolso > progressLula ? "22 BOLSONARO VENCEU!" : "EMPATE!");
+            
+            if (!autoRestartTimeout) {
+                autoRestartTimeout = setTimeout(() => {
+                    resetRoundAutomatically();
+                }, 6000);
+            }
+        }
+    }
+
+    renderStadium(timestamp);
+    renderExtendedTrack(timestamp);
+
+    let runnerXLula = 110 + (progressLula * 5.2);
+    let runnerXBolso = 110 + (progressBolso * 5.2);
+    let lulaLeads = progressLula >= progressBolso;
+
+    // Pistas posicionadas verticalmente de forma alongada
+    renderRunnerCaricature(Math.min(W - 95, runnerXLula), 700, "lula", timestamp, lulaLeads);
+    renderRunnerCaricature(Math.min(W - 95, runnerXBolso), 930, "bolsonaro", timestamp + 400, !lulaLeads);
+
+    renderGiftsSidebar();
+    renderFloatingBoostEffects(timestamp);
+    renderDistanceMeterWidget();
+    renderTopArcadeHUD(elapsedTime);
+
+    if (isFinished) {
+        drawRect(80, 520, W - 160, 200, "rgba(9, 14, 23, 0.96)", "#f3c623", 4);
+        drawText("FIM DA RODADA!", W / 2, 580, 32, "#ffffff", "center", "#000", 5);
+        drawText(winnerText, W / 2, 650, 28, winnerText.includes("13") ? "#e62238" : "#11a855", "center", "#000", 4);
+        drawText("Nova rodada iniciando automaticamente...", W / 2, 695, 15, "#ccc", "center", null);
+    }
+
+    requestAnimationFrame(gameLoop);
 }
 
-function loop(now){
- let elapsed=now-start;
-
- if(!finished){
-  distL=Math.min(100, distL + (speedL*0.0008));
-  distB=Math.min(100, distB + (speedB*0.0008));
-
-  if(speedL>44)speedL-=0.05;
-  if(speedB>44)speedB-=0.05;
-
-  if(distL>=100 || distB>=100 || elapsed>=DURATION){
-   finished=true;
-   winner=distL>distB?"13 LULA":(distB>distL?"22 BOLSONARO":"EMPATE");
-  }
- }
-
- drawBackground(now);
- drawTrack(now);
-
- let xLula = 100 + (distL*5.0);
- let xBolso = 100 + (distB*5.0);
- const lulaFirst = distL>=distB;
-
- drawRunner(Math.min(W-90,xLula), 650, "lula", now, lulaFirst);
- drawRunner(Math.min(W-90,xBolso), 850, "bolsonaro", now+500, !lulaFirst);
-
- drawGiftsMenu();
- drawBoostEffects(now);
- drawDistanceMeter();
- drawTopHUD(elapsed);
-
- if(finished){
-  rect(100,500,W-200,180,"rgba(9,14,23,0.95)","#f3c623",4);
-  text("FIM DA CORRIDA!",W/2,550,28,"#ffffff","center","#000",4);
-  text(`VENCEDOR: ${winner}`,W/2,610,24,winner.includes("13")?"#e62238":"#11a855","center","#000",4);
-  text("Clique em REINICIAR para nova rodada",W/2,650,14,"#ccc","center",null);
- }
-
- requestAnimationFrame(loop);
-}
-
-requestAnimationFrame(loop);
+requestAnimationFrame(gameLoop);
 </script>
 </body>
 </html>
