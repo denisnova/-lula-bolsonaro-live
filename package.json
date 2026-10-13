@@ -1,0 +1,15 @@
+
+{
+  "name": "lula-bolsonaro-live",
+  "version": "1.0.0",
+  "description": "Placar interativo para TikTok LIVE",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "ws": "^8.18.0",
+    "tiktok-live-connector": "^2.1.0"
+  }
+}
