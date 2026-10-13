@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -7,340 +6,172 @@
 <title>Duelo de Digitação - Live</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#080b12;color:white;font-family:Arial,sans-serif;text-align:center}
-header{padding:15px;background:#141a29;font-size:22px;font-weight:bold}
-.status{font-size:12px;color:#bbb;padding:9px}
-.arena{display:flex;gap:9px;padding:9px}
-.player{flex:1;min-width:0;border-radius:14px;padding:9px 5px;overflow:hidden}
-.lula{background:#86151d;border:2px solid #ff424d}
-.bolso{background:#075b37;border:2px solid #26df8a}
-.name{font-size:19px;font-weight:bold;margin:5px}
-.photo{width:100%;height:125px;object-fit:cover;object-position:top;border-radius:9px}
-.monitor{height:85px;background:#11151d;border:4px solid #333b49;border-radius:9px;margin:8px 0;display:flex;align-items:center;justify-content:center;flex-direction:column}
-.number{font-family:monospace;font-size:42px;font-weight:bold;letter-spacing:5px}
-.lula .number{color:#ff4d55}
-.bolso .number{color:#35ff9b}
-.label{font-size:10px;color:#bbb}
-.keyboard{background:#252b36;border-radius:7px;padding:9px 2px;margin:6px 0}
-.keys{display:flex;justify-content:center;gap:4px}
-.key{background:#444e60;border-radius:4px;padding:7px 0;width:22px;font-size:11px}
-.hands{font-size:26px;height:34px}
-.typing .hands{animation:typing .13s infinite alternate}
-.typing .key{animation:keyflash .15s infinite alternate}
-@keyframes typing{from{transform:translateY(-4px) rotate(-10deg)}to{transform:translateY(4px) rotate(10deg)}}
-@keyframes keyflash{from{background:#fff;color:#111}to{background:#596579;color:white}}
-.timer{font-size:45px;font-weight:bold;margin:12px}
-.bar{display:flex;height:12px;margin:8px 12px;background:#303644;border-radius:15px;overflow:hidden}
+body{margin:0;background:#05070c;color:white;font-family:Arial,sans-serif;text-align:center;overflow-x:hidden}
+header{padding:8px;background:#0d111a;font-size:16px;font-weight:bold;border-bottom:1px solid #222}
+.status{font-size:11px;color:#888;padding:4px}
+
+/* Top Stats Bar */
+.top-stats{display:flex;background:#111622;margin:6px 10px;border-radius:10px;padding:8px;justify-content:space-around;align-items:center;border:1px solid #222736}
+.stat-box{text-align:center}
+.stat-label{font-size:9px;color:#aaa;text-transform:uppercase;font-weight:bold}
+.stat-val{font-size:16px;font-weight:bold;font-family:monospace}
+.lead-badge{background:#c92030;padding:6px 12px;border-radius:6px;font-size:12px;font-weight:bold;color:white}
+.lead-badge.bolso-lead{background:#07854e}
+
+/* Arena Layout */
+.arena{display:flex;gap:6px;padding:6px 10px}
+.player{flex:1;min-width:0;border-radius:12px;padding:8px 6px;position:relative}
+.lula{background:#7a1118;border:2px solid #ff3b47}
+.bolso{background:#064a2c;border:2px solid #1ec978}
+
+.player-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.number-tag{font-size:18px;font-weight:bold;font-family:monospace}
+.crown-tag{background:#f5c518;color:#000;font-size:9px;padding:2px 5px;border-radius:4px;font-weight:bold}
+
+.main-score-box{background:#11151f;border-radius:10px;padding:8px 4px;margin-bottom:6px;border:2px solid rgba(255,255,255,0.1)}
+.score-num{font-family:monospace;font-size:42px;font-weight:bold;line-height:1}
+.lula .score-num{color:#ff4d55}
+.bolso .score-num{color:#35ff9b}
+.score-label{font-size:9px;color:#bbb;margin-top:2px;letter-spacing:1px}
+
+.sub-info{display:flex;justify-content:space-between;font-size:11px;font-weight:bold;padding:0 4px;margin-bottom:6px}
+
+/* Urna / Teclado */
+.urna{background:#f0f0f0;border-radius:8px;padding:6px;color:#111;display:flex;gap:6px;align-items:center;justify-content:center;margin-bottom:6px;position:relative}
+.urna-screen{background:#fff;border:2px solid #ccc;border-radius:4px;width:55px;height:55px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:bold;color:#111;text-align:center;padding:2px}
+.urna-keys{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;flex:1}
+.u-key{background:#222;color:#fff;border-radius:3px;font-size:10px;padding:4px 0;text-align:center;font-family:monospace}
+
+/* Mãozinha animada sobre o teclado */
+.hand-pointer {
+  position: absolute;
+  font-size: 24px;
+  bottom: -10px;
+  right: 30px;
+  display: none;
+  z-index: 5;
+  pointer-events: none;
+}
+.typing .hand-pointer {
+  display: block;
+  animation: clickHand .4s infinite alternate ease-in-out;
+}
+@keyframes clickHand {
+  0% { transform: translateY(0) scale(1); }
+  100% { transform: translateY(-8px) scale(1.1); }
+}
+
+/* Timer central */
+.timer-container{background:#111622;margin:0 10px 6px 10px;border-radius:10px;padding:6px;border:1px solid #222736}
+.timer{font-size:36px;font-weight:bold;font-family:monospace;letter-spacing:2px}
+
+/* Barras e Botões */
+.bar{display:flex;height:8px;margin:0 10px 6px 10px;background:#222;border-radius:10px;overflow:hidden}
 #barL{background:#f23843;width:50%;transition:width .3s}
 #barB{background:#26d986;width:50%;transition:width .3s}
-.scores{display:flex;justify-content:space-around;font-size:15px;font-weight:bold}
-button{border:0;border-radius:9px;padding:12px 9px;margin:4px;color:white;background:#30394b;font-weight:bold}
+
+.controls{display:flex;justify-content:center;gap:4px;padding:0 10px}
+button{border:0;border-radius:8px;padding:8px 10px;color:white;background:#252d3d;font-weight:bold;font-size:11px;cursor:pointer}
 button:active{transform:scale(.96)}
 .redbtn{background:#c92030}
 .greenbtn{background:#07854e}
-#speech{margin:10px;padding:13px;background:#171e2c;border-radius:12px;min-height:55px}
-#speaker{font-weight:bold;margin-bottom:6px}
-#phrase{font-size:14px}
-.note{font-size:11px;color:#aaa;padding:10px}
+
+#speech{margin:6px 10px;padding:8px;background:#11151f;border-radius:8px;min-height:40px;border:1px solid #222}
+#speaker{font-size:11px;font-weight:bold;color:#f5c518;margin-bottom:2px}
+#phrase{font-size:12px}
+
 #victory{display:none;position:fixed;inset:0;z-index:10;background:#050711ed;align-items:center;justify-content:center;flex-direction:column;padding:20px}
 #victory.show{display:flex;animation:pop .4s}
-#trophy{font-size:85px;animation:bounce .5s infinite alternate}
-#winTitle{font-size:30px;font-weight:bold;margin:15px}
-#winText{font-size:18px;margin-bottom:18px}
+#trophy{font-size:70px;animation:bounce .5s infinite alternate}
+#winTitle{font-size:24px;font-weight:bold;margin:10px}
+#winText{font-size:16px;margin-bottom:15px}
 .confetti{position:fixed;top:-30px;z-index:12;pointer-events:none;font-size:25px;animation:fall 2.8s linear forwards}
 @keyframes pop{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:scale(1)}}
-@keyframes bounce{to{transform:translateY(-15px) rotate(8deg)}}
+@keyframes bounce{to{transform:translateY(-12px) rotate(6deg)}}
 @keyframes fall{to{transform:translateY(110vh) rotate(600deg);opacity:0}}
-@media(max-width:360px){.photo{height:100px}.number{font-size:34px}.name{font-size:16px}.timer{font-size:38px}}
 </style>
 </head>
 <body>
 
-<header>⌨️ DUELO DE DIGITAÇÃO</header>
-<div class="status" id="status">Iniciando jogo...</div>
+<header>⌨️ DUELO DE DIGITAÇÃO - LIVE</header>
+<div class="status" id="status">Conectando ao servidor...</div>
 
-<div class="arena">
- <div class="player lula" id="playerL">
-  <div class="name">🔴 LULA</div>
-  <img class="photo"
-   src="https://commons.wikimedia.org/wiki/Special:FilePath/Foto_oficial_de_Luiz_In%C3%A1cio_Lula_da_Silva_(2023%E2%80%932027).jpg?width=400"
-   alt="Lula">
-  <div class="monitor">
-   <div class="label">DIGITANDO...</div>
-   <div class="number" id="numL">13</div>
-  </div>
-  <div class="keyboard">
-   <div class="hands">👐</div>
-   <div class="keys">
-    <span class="key">1</span><span class="key">3</span>
-    <span class="key">↵</span>
-   </div>
-  </div>
-  <div class="scores">PONTOS: <span id="scoreL">0</span></div>
-  <button class="redbtn" onclick="testGift('lula')">🎁 Testar presente</button>
+<div class="top-stats">
+ <div class="stat-box">
+  <div class="stat-label">Total</div>
+  <div class="stat-val" id="totalVotes">0</div>
  </div>
-
- <div class="player bolso" id="playerB">
-  <div class="name">🟢 BOLSONARO</div>
-  <img class="photo"
-   src="https://commons.wikimedia.org/wiki/Special:FilePath/2019-01-10_Retrato_Oficial_do_Presidente_da_Rep%C3%BAblica_-_Jair_Messias_Bolsonaro.jpg?width=400"
-   alt="Bolsonaro">
-  <div class="monitor">
-   <div class="label">DIGITANDO...</div>
-   <div class="number" id="numB">22</div>
-  </div>
-  <div class="keyboard">
-   <div class="hands">👐</div>
-   <div class="keys">
-    <span class="key">2</span><span class="key">2</span>
-    <span class="key">↵</span>
-   </div>
-  </div>
-  <div class="scores">PONTOS: <span id="scoreB">0</span></div>
-  <button class="greenbtn" onclick="testGift('bolsonaro')">🎁 Testar presente</button>
+ <div class="stat-box">
+  <div class="stat-label">Diferença</div>
+  <div class="stat-val" id="diffVotes">0</div>
+ </div>
+ <div>
+  <div id="leadBadge" class="lead-badge">EMPATE</div>
  </div>
 </div>
 
-<div class="timer" id="timer">05:00</div>
+<div class="arena">
+ <!-- LADO LULA (13) -->
+ <div class="player lula" id="playerL">
+  <div class="player-header">
+   <span class="number-tag">13</span>
+   <span class="crown-tag" id="crownL" style="display:none">👑 NA FRENTE</span>
+  </div>
+  <div class="main-score-box">
+   <div class="score-num" id="scoreL">0</div>
+   <div class="score-label">PONTOS</div>
+  </div>
+  <div class="sub-info">
+   <span id="pctL">50.0%</span>
+   <span id="giftsL">🎁 0 presentes</span>
+  </div>
+  <div class="urna" id="urnaL">
+   <div class="urna-screen" id="screenL">13</div>
+   <div class="urna-keys">
+    <div class="u-key">1</div><div class="u-key">3</div><div class="u-key">OK</div>
+   </div>
+   <div class="hand-pointer">👆</div>
+  </div>
+  <button class="redbtn" onclick="testGift('lula')">🎁 Testar Rosa (13)</button>
+ </div>
+
+ <!-- LADO BOLSONARO (22) -->
+ <div class="player bolso" id="playerB">
+  <div class="player-header">
+   <span class="number-tag">22</span>
+   <span class="crown-tag" id="crownB" style="display:none">👑 NA FRENTE</span>
+  </div>
+  <div class="main-score-box">
+   <div class="score-num" id="scoreB">0</div>
+   <div class="score-label">PONTOS</div>
+  </div>
+  <div class="sub-info">
+   <span id="pctB">50.0%</span>
+   <span id="giftsB">🎁 0 presentes</span>
+  </div>
+  <div class="urna" id="urnaB">
+   <div class="urna-screen" id="screenB">22</div>
+   <div class="urna-keys">
+    <div class="u-key">2</div><div class="u-key">2</div><div class="u-key">OK</div>
+   </div>
+   <div class="hand-pointer">👆</div>
+  </div>
+  <button class="greenbtn" onclick="testGift('bolsonaro')">🎁 Testar TikTok (22)</button>
+ </div>
+</div>
+
+<div class="timer-container">
+ <div class="timer" id="timer">05:00</div>
+</div>
 <div class="bar"><div id="barL"></div><div id="barB"></div></div>
 
-<div>
- <button onclick="enableVoice()">🔊 Ativar voz</button>
- <button onclick="newRound()">↻ Zerar rodada</button>
- <button onclick="fullScreen()">⛶ Tela cheia</button>
+<div class="controls">
+ <button onclick="enableVoice()">🔊 Voz</button>
+ <button onclick="newRound()">↻ Reiniciar</button>
+ <button onclick="fullScreen()">⛶ Tela Cheia</button>
 </div>
 
 <div id="speech">
  <div id="speaker">🎤 COMENTÁRIO DA LIVE</div>
- <div id="phrase">Envie um presente para começar a digitação!</div>
-</div>
-
-<div class="note">
-Animação de digitação, falas humorísticas e rodadas automáticas.
-Presentes reais exigem conexão funcional com o servidor TikTok.
-</div>
-
-<div id="victory">
- <div id="trophy">🏆🎉</div>
- <div id="winTitle">FIM DA RODADA!</div>
- <div id="winText"></div>
- <button onclick="newRound()">▶ Nova rodada</button>
-</div>
-
-<script>
-let scores={lula:0,bolsonaro:0};
-let seconds=300;
-let interval=null;
-let ended=false;
-let voice=false;
-let socket=null;
-let serverTotals=null;
-let resetTimeout=null;
-
-const phrases={
- lula:[
-  "Rapaz, meus dedos estão mais rápidos que esse cronômetro!",
-  "Treze! Digitei tão rápido que até o teclado se assustou!",
-  "Calma, gente! Ainda estou aquecendo os dedos!",
-  "Esse teclado vai pedir férias depois dessa!"
- ],
- bolsonaro:[
-  "Vinte e dois! Meu teclado está trabalhando sem parar!",
-  "Calma, pessoal! Os dedos estão em modo turbo!",
-  "Esse computador vai precisar de uma pausa!",
-  "Dois e dois! Opa, já digitei de novo!"
- ]
-};
-
-function render(){
- document.getElementById('scoreL').textContent=scores.lula;
- document.getElementById('scoreB').textContent=scores.bolsonaro;
- let total=scores.lula+scores.bolsonaro||1;
- document.getElementById('barL').style.width=
-  (scores.lula/total*100)+'%';
- document.getElementById('barB').style.width=
-  (scores.bolsonaro/total*100)+'%';
- document.getElementById('timer').textContent=
-  String(Math.floor(seconds/60)).padStart(2,'0')+':'+
-  String(seconds%60).padStart(2,'0');
-}
-
-function speak(text){
- document.getElementById('phrase').textContent=text;
- if(voice&&'speechSynthesis' in window){
-  speechSynthesis.cancel();
-  let msg=new SpeechSynthesisUtterance(text);
-  msg.lang='pt-BR';
-  msg.rate=1.08;
-  speechSynthesis.speak(msg);
- }
-}
-
-function enableVoice(){
- if(!('speechSynthesis' in window)){
-  speak('A voz não está disponível neste navegador.');
-  return;
- }
- voice=true;
- speak('A disputa começou! Que vença o mais rápido no teclado!');
-}
-
-function animateTyping(team){
- const el=document.getElementById(team==='lula'?'playerL':'playerB');
- el.classList.remove('typing');
- void el.offsetWidth;
- el.classList.add('typing');
- setTimeout(()=>el.classList.remove('typing'),2200);
-}
-
-function gift(team,points=1){
- if(ended)return;
- scores[team]+=points;
- animateTyping(team);
- let list=phrases[team];
- let phrase=list[Math.floor(Math.random()*list.length)];
- document.getElementById('speaker').textContent=
-  team==='lula'?'🔴 Lula está digitando 13':'🟢 Bolsonaro está digitando 22';
- speak(phrase);
- render();
-}
-
-function testGift(team){gift(team,1)}
-
-function startTimer(){
- if(interval!==null||ended)return;
- interval=setInterval(()=>{
-  seconds--;
-  render();
-  if(seconds<=0)finishRound();
- },1000);
-}
-
-function finishRound(){
- if(ended)return;
- ended=true;
- clearInterval(interval);
- interval=null;
- const overlay=document.getElementById('victory');
- overlay.classList.add('show');
-
- if(scores.lula>scores.bolsonaro){
-  document.getElementById('winTitle').textContent='🔴 LULA VENCEU A RODADA!';
-  document.getElementById('winText').textContent=
-   'Lula '+scores.lula+' × '+scores.bolsonaro+' Bolsonaro';
-  speak('Fim da rodada! Lula ganhou esta rodada!');
- }else if(scores.bolsonaro>scores.lula){
-  document.getElementById('winTitle').textContent='🟢 BOLSONARO VENCEU A RODADA!';
-  document.getElementById('winText').textContent=
-   'Lula '+scores.lula+' × '+scores.bolsonaro+' Bolsonaro';
-  speak('Fim da rodada! Bolsonaro ganhou esta rodada!');
- }else{
-  document.getElementById('winTitle').textContent='🤝 DEU EMPATE!';
-  document.getElementById('winText').textContent=
-   'Lula '+scores.lula+' × '+scores.bolsonaro+' Bolsonaro';
-  speak('Fim da rodada! Deu empate!');
- }
- confetti();
- document.getElementById('status').textContent='Rodada finalizada!';
- resetTimeout=setTimeout(newRound,8000);
-}
-
-function confetti(){
- const icons=['🎉','🎊','⭐','✨','🏆'];
- for(let i=0;i<35;i++){
-  const e=document.createElement('div');
-  e.className='confetti';
-  e.textContent=icons[Math.floor(Math.random()*icons.length)];
-  e.style.left=Math.random()*100+'vw';
-  e.style.animationDelay=Math.random()+'s';
-  document.body.appendChild(e);
-  setTimeout(()=>e.remove(),4000);
- }
-}
-
-function newRound(){
- clearInterval(interval);
- clearTimeout(resetTimeout);
- interval=null;
- resetTimeout=null;
- if('speechSynthesis' in window)speechSynthesis.cancel();
- ended=false;
- scores={lula:0,bolsonaro:0};
- seconds=300;
- document.getElementById('victory').classList.remove('show');
- document.getElementById('status').textContent='Nova rodada em andamento!';
- document.getElementById('speaker').textContent='⌨️ NOVA RODADA';
- speak('Nova rodada! Valendo mais cinco minutos!');
- render();
- startTimer();
-}
-
-function fullScreen(){
- if(!document.fullscreenElement)
-  document.documentElement.requestFullscreen?.();
- else document.exitFullscreen?.();
-}
-
-// Compatibilidade com o servidor WebSocket do projeto anterior.
-// Pressupõe que os totais recebidos são {blue, red}, como no código antigo.
-// O mapeamento visual passa a ser: blue = Lula, red = Bolsonaro.
-try{
- const protocol=location.protocol==='https:'?'wss:':'ws:';
- socket=new WebSocket(protocol+'//'+location.host);
-
- socket.onopen=()=>{
-  document.getElementById('status').textContent=
-   'Conectado ao servidor; aguardando presentes...';
- };
-
- socket.onclose=()=>{
-  document.getElementById('status').textContent=
-   'Servidor desconectado; botões de teste disponíveis.';
- };
-
- socket.onerror=()=>{
-  document.getElementById('status').textContent=
-   'Servidor indisponível; botões de teste disponíveis.';
- };
-
- socket.onmessage=e=>{
-  try{
-   const data=JSON.parse(e.data);
-
-   if(data.type==='init'&&data.totals){
-    serverTotals={...data.totals};
-    if(data.status?.message)
-     document.getElementById('status').textContent=data.status.message;
-   }
-
-   if(data.type==='gift'&&data.totals){
-    if(!serverTotals){
-     serverTotals={...data.totals};
-    }else{
-     const deltaL=(Number(data.totals.blue)||0)-
-                  (Number(serverTotals.blue)||0);
-     const deltaB=(Number(data.totals.red)||0)-
-                  (Number(serverTotals.red)||0);
-
-     serverTotals={...data.totals};
-
-     if(deltaL>0)gift('lula',deltaL);
-     if(deltaB>0)gift('bolsonaro',deltaB);
-    }
-   }
-
-   if(data.type==='status'&&data.status){
-    document.getElementById('status').textContent=data.status.message;
-   }
-  }catch(err){}
- };
-}catch(err){
- document.getElementById('status').textContent=
-  'Modo de teste disponível.';
-}
-
-render();
-startTimer();
-</script>
-</body>
-</html>
+ <div id="phrase">Envie um presente para
+  
