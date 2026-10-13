@@ -3,171 +3,341 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Lula x Bolsonaro — Live</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Duelo de Digitação - Live</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#090b12;color:white;font-family:Arial,sans-serif;text-align:center}
-header{padding:15px;background:#141827;font-size:23px;font-weight:bold}
-.status{font-size:12px;color:#bbb;margin:12px}
-.score{display:flex;gap:10px;padding:10px}
-.team{flex:1;padding:12px 5px;border-radius:14px;min-width:0}
-.blue{background:#123f9b;border:2px solid #4385ff}
-.red{background:#9d171e;border:2px solid #ff5151}
-.photo{width:100%;height:190px;object-fit:cover;object-position:top;border-radius:10px}
-.team h2{font-size:18px;margin:10px 0}
-.points{font-size:44px;font-weight:bold}
-.bar{height:18px;background:#292d3a;margin:12px;border-radius:20px;overflow:hidden;display:flex}
-#bluebar{height:100%;width:50%;background:#3982ff}
-#redbar{height:100%;width:50%;background:#ff4040}
-.timer{font-size:42px;font-weight:bold;margin:16px}
-button{border:0;border-radius:10px;padding:12px;margin:4px;color:white;font-weight:bold;font-size:13px}
-.btnblue{background:#2368e8}.btnred{background:#db2934}
-.neutral{background:#303647}
-.note{font-size:11px;color:#aaa;padding:12px}
+body{margin:0;background:#080b12;color:white;font-family:Arial,sans-serif;text-align:center}
+header{padding:15px;background:#141a29;font-size:22px;font-weight:bold}
+.status{font-size:12px;color:#bbb;padding:9px}
+.arena{display:flex;gap:9px;padding:9px}
+.player{flex:1;min-width:0;border-radius:14px;padding:9px 5px;overflow:hidden}
+.lula{background:#86151d;border:2px solid #ff424d}
+.bolso{background:#075b37;border:2px solid #26df8a}
+.name{font-size:19px;font-weight:bold;margin:5px}
+.photo{width:100%;height:125px;object-fit:cover;object-position:top;border-radius:9px}
+.monitor{height:85px;background:#11151d;border:4px solid #333b49;border-radius:9px;margin:8px 0;display:flex;align-items:center;justify-content:center;flex-direction:column}
+.number{font-family:monospace;font-size:42px;font-weight:bold;letter-spacing:5px}
+.lula .number{color:#ff4d55}
+.bolso .number{color:#35ff9b}
+.label{font-size:10px;color:#bbb}
+.keyboard{background:#252b36;border-radius:7px;padding:9px 2px;margin:6px 0}
+.keys{display:flex;justify-content:center;gap:4px}
+.key{background:#444e60;border-radius:4px;padding:7px 0;width:22px;font-size:11px}
+.hands{font-size:26px;height:34px}
+.typing .hands{animation:typing .13s infinite alternate}
+.typing .key{animation:keyflash .15s infinite alternate}
+@keyframes typing{from{transform:translateY(-4px) rotate(-10deg)}to{transform:translateY(4px) rotate(10deg)}}
+@keyframes keyflash{from{background:#fff;color:#111}to{background:#596579;color:white}}
+.timer{font-size:45px;font-weight:bold;margin:12px}
+.bar{display:flex;height:12px;margin:8px 12px;background:#303644;border-radius:15px;overflow:hidden}
+#barL{background:#f23843;width:50%;transition:width .3s}
+#barB{background:#26d986;width:50%;transition:width .3s}
+.scores{display:flex;justify-content:space-around;font-size:15px;font-weight:bold}
+button{border:0;border-radius:9px;padding:12px 9px;margin:4px;color:white;background:#30394b;font-weight:bold}
+button:active{transform:scale(.96)}
+.redbtn{background:#c92030}
+.greenbtn{background:#07854e}
+#speech{margin:10px;padding:13px;background:#171e2c;border-radius:12px;min-height:55px}
+#speaker{font-weight:bold;margin-bottom:6px}
+#phrase{font-size:14px}
+.note{font-size:11px;color:#aaa;padding:10px}
+#victory{display:none;position:fixed;inset:0;z-index:10;background:#050711ed;align-items:center;justify-content:center;flex-direction:column;padding:20px}
+#victory.show{display:flex;animation:pop .4s}
+#trophy{font-size:85px;animation:bounce .5s infinite alternate}
+#winTitle{font-size:30px;font-weight:bold;margin:15px}
+#winText{font-size:18px;margin-bottom:18px}
+.confetti{position:fixed;top:-30px;z-index:12;pointer-events:none;font-size:25px;animation:fall 2.8s linear forwards}
+@keyframes pop{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:scale(1)}}
+@keyframes bounce{to{transform:translateY(-15px) rotate(8deg)}}
+@keyframes fall{to{transform:translateY(110vh) rotate(600deg);opacity:0}}
+@media(max-width:360px){.photo{height:100px}.number{font-size:34px}.name{font-size:16px}.timer{font-size:38px}}
 </style>
 </head>
 <body>
 
-<header>🇧🇷 LULA × BOLSONARO 🇧🇷</header>
-<div class="status" id="status">Conectando ao servidor...</div>
+<header>⌨️ DUELO DE DIGITAÇÃO</header>
+<div class="status" id="status">Iniciando jogo...</div>
 
-<div class="score">
-  <div class="team blue">
-    <img class="photo"
-      src="https://commons.wikimedia.org/wiki/Special:FilePath/Foto_oficial_de_Luiz_In%C3%A1cio_Lula_da_Silva_(2023%E2%80%932027).jpg?width=400"
-      alt="Lula">
-    <h2>🔵 LULA</h2>
-    <div class="points" id="blue">0</div>
-    <div>PONTOS</div>
+<div class="arena">
+ <div class="player lula" id="playerL">
+  <div class="name">🔴 LULA</div>
+  <img class="photo"
+   src="https://commons.wikimedia.org/wiki/Special:FilePath/Foto_oficial_de_Luiz_In%C3%A1cio_Lula_da_Silva_(2023%E2%80%932027).jpg?width=400"
+   alt="Lula">
+  <div class="monitor">
+   <div class="label">DIGITANDO...</div>
+   <div class="number" id="numL">13</div>
   </div>
-
-  <div class="team red">
-    <img class="photo"
-      src="https://commons.wikimedia.org/wiki/Special:FilePath/2019-01-10_Retrato_Oficial_do_Presidente_da_Rep%C3%BAblica_-_Jair_Messias_Bolsonaro.jpg?width=400"
-      alt="Jair Bolsonaro">
-    <h2>🔴 BOLSONARO</h2>
-    <div class="points" id="red">0</div>
-    <div>PONTOS</div>
+  <div class="keyboard">
+   <div class="hands">👐</div>
+   <div class="keys">
+    <span class="key">1</span><span class="key">3</span>
+    <span class="key">↵</span>
+   </div>
   </div>
-</div>
+  <div class="scores">PONTOS: <span id="scoreL">0</span></div>
+  <button class="redbtn" onclick="testGift('lula')">🎁 Testar presente</button>
+ </div>
 
-<div class="bar">
-  <div id="bluebar"></div>
-  <div id="redbar"></div>
+ <div class="player bolso" id="playerB">
+  <div class="name">🟢 BOLSONARO</div>
+  <img class="photo"
+   src="https://commons.wikimedia.org/wiki/Special:FilePath/2019-01-10_Retrato_Oficial_do_Presidente_da_Rep%C3%BAblica_-_Jair_Messias_Bolsonaro.jpg?width=400"
+   alt="Bolsonaro">
+  <div class="monitor">
+   <div class="label">DIGITANDO...</div>
+   <div class="number" id="numB">22</div>
+  </div>
+  <div class="keyboard">
+   <div class="hands">👐</div>
+   <div class="keys">
+    <span class="key">2</span><span class="key">2</span>
+    <span class="key">↵</span>
+   </div>
+  </div>
+  <div class="scores">PONTOS: <span id="scoreB">0</span></div>
+  <button class="greenbtn" onclick="testGift('bolsonaro')">🎁 Testar presente</button>
+ </div>
 </div>
 
 <div class="timer" id="timer">05:00</div>
+<div class="bar"><div id="barL"></div><div id="barB"></div></div>
 
 <div>
-  <button class="btnblue" onclick="demo('blue')">🎁 Testar Lula +1</button>
-  <button class="btnred" onclick="demo('red')">🎁 Testar Bolsonaro +1</button>
+ <button onclick="enableVoice()">🔊 Ativar voz</button>
+ <button onclick="newRound()">↻ Zerar rodada</button>
+ <button onclick="fullScreen()">⛶ Tela cheia</button>
 </div>
 
-<div>
-  <button class="neutral" onclick="resetGame()">↻ Zerar pontos</button>
-  <button class="neutral" onclick="fullScreen()">⛶ Tela cheia</button>
+<div id="speech">
+ <div id="speaker">🎤 COMENTÁRIO DA LIVE</div>
+ <div id="phrase">Envie um presente para começar a digitação!</div>
 </div>
 
 <div class="note">
-O tempo reinicia automaticamente a cada 5 minutos.
-Os presentes reais dependem da conexão com o TikTok LIVE.
+Animação de digitação, falas humorísticas e rodadas automáticas.
+Presentes reais exigem conexão funcional com o servidor TikTok.
+</div>
+
+<div id="victory">
+ <div id="trophy">🏆🎉</div>
+ <div id="winTitle">FIM DA RODADA!</div>
+ <div id="winText"></div>
+ <button onclick="newRound()">▶ Nova rodada</button>
 </div>
 
 <script>
-let scores={blue:0,red:0};
+let scores={lula:0,bolsonaro:0};
 let seconds=300;
 let interval=null;
+let ended=false;
+let voice=false;
+let socket=null;
+let serverTotals=null;
+let resetTimeout=null;
+
+const phrases={
+ lula:[
+  "Rapaz, meus dedos estão mais rápidos que esse cronômetro!",
+  "Treze! Digitei tão rápido que até o teclado se assustou!",
+  "Calma, gente! Ainda estou aquecendo os dedos!",
+  "Esse teclado vai pedir férias depois dessa!"
+ ],
+ bolsonaro:[
+  "Vinte e dois! Meu teclado está trabalhando sem parar!",
+  "Calma, pessoal! Os dedos estão em modo turbo!",
+  "Esse computador vai precisar de uma pausa!",
+  "Dois e dois! Opa, já digitei de novo!"
+ ]
+};
 
 function render(){
- document.getElementById('blue').textContent=scores.blue;
- document.getElementById('red').textContent=scores.red;
-
- let total=scores.blue+scores.red||1;
-
- document.getElementById('bluebar').style.width=
- (scores.blue/total*100)+'%';
-
- document.getElementById('redbar').style.width=
- (scores.red/total*100)+'%';
-
+ document.getElementById('scoreL').textContent=scores.lula;
+ document.getElementById('scoreB').textContent=scores.bolsonaro;
+ let total=scores.lula+scores.bolsonaro||1;
+ document.getElementById('barL').style.width=
+  (scores.lula/total*100)+'%';
+ document.getElementById('barB').style.width=
+  (scores.bolsonaro/total*100)+'%';
  document.getElementById('timer').textContent=
- String(Math.floor(seconds/60)).padStart(2,'0')+':'+
- String(seconds%60).padStart(2,'0');
+  String(Math.floor(seconds/60)).padStart(2,'0')+':'+
+  String(seconds%60).padStart(2,'0');
 }
 
-function demo(team){
- scores[team]++;
- render();
-}
-
-function startTimer(){
- if(interval!==null)return;
-
- interval=setInterval(()=>{
-   if(seconds>0){
-     seconds--;
-   }else{
-     seconds=300;
-   }
-   render();
- },1000);
-}
-
-function resetGame(){
- scores={blue:0,red:0};
- render();
-}
-
-function fullScreen(){
- if(!document.fullscreenElement){
-   document.documentElement.requestFullscreen?.();
- }else{
-   document.exitFullscreen?.();
+function speak(text){
+ document.getElementById('phrase').textContent=text;
+ if(voice&&'speechSynthesis' in window){
+  speechSynthesis.cancel();
+  let msg=new SpeechSynthesisUtterance(text);
+  msg.lang='pt-BR';
+  msg.rate=1.08;
+  speechSynthesis.speak(msg);
  }
 }
 
-const protocol=location.protocol==='https:'?'wss:':'ws:';
-const socket=new WebSocket(protocol+'//'+location.host);
+function enableVoice(){
+ if(!('speechSynthesis' in window)){
+  speak('A voz não está disponível neste navegador.');
+  return;
+ }
+ voice=true;
+ speak('A disputa começou! Que vença o mais rápido no teclado!');
+}
 
-socket.onopen=()=>{
+function animateTyping(team){
+ const el=document.getElementById(team==='lula'?'playerL':'playerB');
+ el.classList.remove('typing');
+ void el.offsetWidth;
+ el.classList.add('typing');
+ setTimeout(()=>el.classList.remove('typing'),2200);
+}
+
+function gift(team,points=1){
+ if(ended)return;
+ scores[team]+=points;
+ animateTyping(team);
+ let list=phrases[team];
+ let phrase=list[Math.floor(Math.random()*list.length)];
+ document.getElementById('speaker').textContent=
+  team==='lula'?'🔴 Lula está digitando 13':'🟢 Bolsonaro está digitando 22';
+ speak(phrase);
+ render();
+}
+
+function testGift(team){gift(team,1)}
+
+function startTimer(){
+ if(interval!==null||ended)return;
+ interval=setInterval(()=>{
+  seconds--;
+  render();
+  if(seconds<=0)finishRound();
+ },1000);
+}
+
+function finishRound(){
+ if(ended)return;
+ ended=true;
+ clearInterval(interval);
+ interval=null;
+ const overlay=document.getElementById('victory');
+ overlay.classList.add('show');
+
+ if(scores.lula>scores.bolsonaro){
+  document.getElementById('winTitle').textContent='🔴 LULA VENCEU A RODADA!';
+  document.getElementById('winText').textContent=
+   'Lula '+scores.lula+' × '+scores.bolsonaro+' Bolsonaro';
+  speak('Fim da rodada! Lula ganhou esta rodada!');
+ }else if(scores.bolsonaro>scores.lula){
+  document.getElementById('winTitle').textContent='🟢 BOLSONARO VENCEU A RODADA!';
+  document.getElementById('winText').textContent=
+   'Lula '+scores.lula+' × '+scores.bolsonaro+' Bolsonaro';
+  speak('Fim da rodada! Bolsonaro ganhou esta rodada!');
+ }else{
+  document.getElementById('winTitle').textContent='🤝 DEU EMPATE!';
+  document.getElementById('winText').textContent=
+   'Lula '+scores.lula+' × '+scores.bolsonaro+' Bolsonaro';
+  speak('Fim da rodada! Deu empate!');
+ }
+ confetti();
+ document.getElementById('status').textContent='Rodada finalizada!';
+ resetTimeout=setTimeout(newRound,8000);
+}
+
+function confetti(){
+ const icons=['🎉','🎊','⭐','✨','🏆'];
+ for(let i=0;i<35;i++){
+  const e=document.createElement('div');
+  e.className='confetti';
+  e.textContent=icons[Math.floor(Math.random()*icons.length)];
+  e.style.left=Math.random()*100+'vw';
+  e.style.animationDelay=Math.random()+'s';
+  document.body.appendChild(e);
+  setTimeout(()=>e.remove(),4000);
+ }
+}
+
+function newRound(){
+ clearInterval(interval);
+ clearTimeout(resetTimeout);
+ interval=null;
+ resetTimeout=null;
+ if('speechSynthesis' in window)speechSynthesis.cancel();
+ ended=false;
+ scores={lula:0,bolsonaro:0};
+ seconds=300;
+ document.getElementById('victory').classList.remove('show');
+ document.getElementById('status').textContent='Nova rodada em andamento!';
+ document.getElementById('speaker').textContent='⌨️ NOVA RODADA';
+ speak('Nova rodada! Valendo mais cinco minutos!');
+ render();
+ startTimer();
+}
+
+function fullScreen(){
+ if(!document.fullscreenElement)
+  document.documentElement.requestFullscreen?.();
+ else document.exitFullscreen?.();
+}
+
+// Compatibilidade com o servidor WebSocket do projeto anterior.
+// Pressupõe que os totais recebidos são {blue, red}, como no código antigo.
+// O mapeamento visual passa a ser: blue = Lula, red = Bolsonaro.
+try{
+ const protocol=location.protocol==='https:'?'wss:':'ws:';
+ socket=new WebSocket(protocol+'//'+location.host);
+
+ socket.onopen=()=>{
+  document.getElementById('status').textContent=
+   'Conectado ao servidor; aguardando presentes...';
+ };
+
+ socket.onclose=()=>{
+  document.getElementById('status').textContent=
+   'Servidor desconectado; botões de teste disponíveis.';
+ };
+
+ socket.onerror=()=>{
+  document.getElementById('status').textContent=
+   'Servidor indisponível; botões de teste disponíveis.';
+ };
+
+ socket.onmessage=e=>{
+  try{
+   const data=JSON.parse(e.data);
+
+   if(data.type==='init'&&data.totals){
+    serverTotals={...data.totals};
+    if(data.status?.message)
+     document.getElementById('status').textContent=data.status.message;
+   }
+
+   if(data.type==='gift'&&data.totals){
+    if(!serverTotals){
+     serverTotals={...data.totals};
+    }else{
+     const deltaL=(Number(data.totals.blue)||0)-
+                  (Number(serverTotals.blue)||0);
+     const deltaB=(Number(data.totals.red)||0)-
+                  (Number(serverTotals.red)||0);
+
+     serverTotals={...data.totals};
+
+     if(deltaL>0)gift('lula',deltaL);
+     if(deltaB>0)gift('bolsonaro',deltaB);
+    }
+   }
+
+   if(data.type==='status'&&data.status){
+    document.getElementById('status').textContent=data.status.message;
+   }
+  }catch(err){}
+ };
+}catch(err){
  document.getElementById('status').textContent=
- 'Conectado ao servidor; aguardando TikTok…';
-};
-
-socket.onclose=()=>{
- document.getElementById('status').textContent=
- 'Servidor desconectado';
-};
-
-socket.onerror=()=>{
- document.getElementById('status').textContent=
- 'Não foi possível conectar ao servidor';
-};
-
-socket.onmessage=e=>{
- try{
-  const data=JSON.parse(e.data);
-
-  if(data.type==='init'&&data.totals){
-   scores=data.totals;
-   render();
-   if(data.status?.message)
-    document.getElementById('status').textContent=
-    data.status.message;
-  }
-
-  if(data.type==='gift'&&data.totals){
-   scores=data.totals;
-   render();
-  }
-
-  if(data.type==='status'&&data.status){
-   document.getElementById('status').textContent=
-   data.status.message;
-  }
- }catch(err){}
-};
+  'Modo de teste disponível.';
+}
 
 render();
 startTimer();
