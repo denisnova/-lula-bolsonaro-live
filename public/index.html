@@ -17,17 +17,16 @@ canvas{display:block;width:100%;height:100%}
 const canvas = document.querySelector("#game");
 const c = canvas.getContext("2d");
 
-// Resolução vertical padrão TikTok Live (720x1280)
 const W = 720, H = 1280;
-const ROUND_DURATION = 90000; // 90 segundos para acompanhar a pista mais longa
+const ROUND_DURATION = 90000; // 90 segundos
 
 let startTime = performance.now();
 let isFinished = false;
 let winnerText = "";
-let speedLula = 32, speedBolso = 64; // Velocidades base calibradas para pista longa
-let progressLula = 4, progressBolso = 6;
+let speedLula = 44, speedBolso = 68;
+let progressLula = 10, progressBolso = 15;
 let boostEffects = [];
-let recentGiftsLog = [];
+let chatFeedLog = [];
 let autoRestartTimeout = null;
 
 function handleResize() {
@@ -71,57 +70,43 @@ function drawLine(x1, y1, x2, y2, color, width) {
     c.stroke();
 }
 
-// Estádio, refletores e arquibancadas
+// Estádio e arquibancadas de alta qualidade visual
 function renderStadium(timestamp) {
-    let skyGradient = c.createLinearGradient(0, 0, 0, 480);
+    let skyGradient = c.createLinearGradient(0, 0, 0, 320);
     skyGradient.addColorStop(0, "#101d35");
     skyGradient.addColorStop(0.5, "#233d64");
     skyGradient.addColorStop(1, "#52759e");
-    drawRect(0, 0, W, 480, skyGradient);
+    drawRect(0, 0, W, 320, skyGradient);
 
-    for (let i = 0; i < 4; i++) {
-        let rx = 60 + i * 195;
-        drawRect(rx, 35, 70, 12, "#d8e9ff");
-        drawRect(rx + 10, 47, 50, 6, "#fff4c5");
-        c.fillStyle = "rgba(255, 248, 200, 0.03)";
-        c.beginPath();
-        c.moveTo(rx, 47);
-        c.lineTo(rx + 70, 47);
-        c.lineTo(rx + 150, 360);
-        c.lineTo(rx - 80, 360);
-        c.closePath();
-        c.fill();
-    }
-
-    drawRect(0, 160, W, 225, "#182333");
-    const seatColors = ["#e53935", "#43a047", "#1e88e5", "#fdd835", "#ffffff", "#fb8c00", "#8e24aa"];
-    for (let row = 0; row < 7; row++) {
-        for (let col = 0; col < 42; col++) {
-            let seatX = col * 18 + ((row % 2) * 9) - ((timestamp * 0.015) % 18);
-            let seatY = 175 + row * 28;
+    drawRect(0, 150, W, 170, "#182333");
+    const seatColors = ["#e53935", "#43a047", "#1e88e5", "#fdd835", "#ffffff", "#fb8c00"];
+    for (let row = 0; row < 6; row++) {
+        for (let col = 0; col < 40; col++) {
+            let seatX = col * 19 + ((row % 2) * 9) - ((timestamp * 0.015) % 19);
+            let seatY = 160 + row * 26;
             let colorIndex = (col * 5 + row * 9) % seatColors.length;
-            drawRect(seatX, seatY, 10, 13, seatColors[colorIndex]);
-            drawRect(seatX + 2, seatY - 6, 6, 6, "#f5c29b");
+            drawRect(seatX, seatY, 10, 12, seatColors[colorIndex]);
+            drawRect(seatX + 2, seatY - 5, 6, 5, "#f5c29b");
         }
     }
 
-    drawRect(0, 370, W, 20, "#0b1018");
-    drawRect(0, 390, W, 12, "#ffffff");
+    drawRect(0, 310, W, 15, "#0b1018");
+    drawRect(0, 325, W, 10, "#ffffff");
 }
 
-// Pista de corrida MUITO MAIS LONGA E EXTENSA
+// Pista longa estendida com perspectiva
 function renderExtendedTrack(timestamp) {
-    drawRect(0, 402, W, 680, "#b84c38"); // Altura da pista aumentada para dar mais espaço de percurso
+    drawRect(0, 335, W, 740, "#b84c38");
 
-    for (let i = 0; i < 8; i++) {
-        let lineY = 415 + i * 82;
-        drawRect(0, lineY, W, 4, "rgba(255, 255, 255, 0.75)");
+    for (let i = 0; i < 6; i++) {
+        let lineY = 350 + i * 120;
+        drawRect(0, lineY, W, 5, "rgba(255, 255, 255, 0.8)");
     }
 
-    let trackShift = (timestamp * 0.35) % 200;
-    for (let i = -2; i < 6; i++) {
-        let posX = i * 200 - trackShift;
-        drawLine(posX, 402, posX + 120, 1082, "rgba(255, 255, 255, 0.12)", 8);
+    let trackShift = (timestamp * 0.4) % 180;
+    for (let i = -2; i < 7; i++) {
+        let posX = i * 180 - trackShift;
+        drawLine(posX, 335, posX + 140, 1075, "rgba(255, 255, 255, 0.15)", 8);
     }
 }
 
@@ -129,37 +114,37 @@ function renderExtendedTrack(timestamp) {
 function renderRunnerCaricature(x, y, teamType, timestamp, isLeader) {
     c.save();
     c.translate(x, y);
-    c.scale(1.25, 1.25);
+    c.scale(1.3, 1.3);
 
     const isLula = teamType === "lula";
     const shirtColor = isLula ? "#d62828" : "#1b8a4f";
     const pantsColor = isLula ? "#9e1b1b" : "#125933";
-    const runningCycle = Math.sin(timestamp * 0.028);
+    const runCycle = Math.sin(timestamp * 0.03);
 
-    c.fillStyle = "rgba(0, 0, 0, 0.45)";
+    c.fillStyle = "rgba(0, 0, 0, 0.4)";
     c.beginPath();
-    c.ellipse(0, 12, 38, 10, 0, 0, Math.PI * 2);
+    c.ellipse(0, 15, 38, 10, 0, 0, Math.PI * 2);
     c.fill();
 
-    drawLine(-8, -10, -20 + runningCycle * 20, 12, pantsColor, 13);
-    drawLine(8, -10, 20 - runningCycle * 20, 12, pantsColor, 13);
+    drawLine(-10, -5, -25 + runCycle * 22, 18, pantsColor, 14);
+    drawLine(10, -5, 25 - runCycle * 22, 18, pantsColor, 14);
 
-    drawRect(-26 + runningCycle * 20, 10, 15, 8, "#ffffff");
-    drawRect(11 - runningCycle * 20, 10, 15, 8, "#ffffff");
+    drawRect(-32 + runCycle * 22, 15, 16, 9, "#ffffff");
+    drawRect(16 - runCycle * 22, 15, 16, 9, "#ffffff");
 
-    drawRect(-18, -58, 36, 48, shirtColor, isLula ? "#ff6b6b" : "#4ae38d", 2);
+    drawRect(-20, -58, 40, 50, shirtColor, isLula ? "#ff6b6b" : "#4ae38d", 2);
     if (!isLula) {
-        drawRect(-18, -58, 36, 9, "#f3c623");
+        drawRect(-20, -58, 40, 9, "#f3c623");
     } else {
-        drawText("★", 0, -31, 17, "#ffffff", "center", null);
+        drawText("★", 0, -31, 18, "#ffffff", "center", null);
     }
 
-    drawLine(-18, -48, -30 - runningCycle * 14, -26, shirtColor, 11);
-    drawLine(18, -48, 30 + runningCycle * 14, -26, shirtColor, 11);
+    drawLine(-20, -48, -32 - runCycle * 16, -26, shirtColor, 12);
+    drawLine(20, -48, 32 + runCycle * 16, -26, shirtColor, 12);
 
     c.fillStyle = "#f3be98";
     c.beginPath();
-    c.arc(0, -82, 29, 0, Math.PI * 2);
+    c.arc(0, -85, 30, 0, Math.PI * 2);
     c.fill();
     c.strokeStyle = "#1a1a1a";
     c.lineWidth = 2;
@@ -167,108 +152,103 @@ function renderRunnerCaricature(x, y, teamType, timestamp, isLeader) {
 
     if (isLula) {
         c.fillStyle = "#e0e0e0";
-        c.beginPath(); c.arc(0, -95, 30, Math.PI, Math.PI * 2); c.fill();
-        c.beginPath(); c.arc(0, -76, 29, 0.2, Math.PI - 0.2); c.fill();
-        drawRect(-29, -101, 58, 8, "#d62828");
+        c.beginPath(); c.arc(0, -98, 31, Math.PI, Math.PI * 2); c.fill();
+        c.beginPath(); c.arc(0, -78, 30, 0.2, Math.PI - 0.2); c.fill();
+        drawRect(-30, -104, 60, 9, "#d62828");
     } else {
         c.fillStyle = "#3d2b1f";
-        c.beginPath(); c.arc(0, -97, 29, Math.PI * 0.8, Math.PI * 2.2); c.fill();
-        drawRect(-19, -86, 14, 10, "rgba(0,0,0,0.15)", "#333", 2);
-        drawRect(5, -86, 14, 10, "rgba(0,0,0,0.15)", "#333", 2);
-        drawLine(-5, -81, 5, -81, "#333", 2);
+        c.beginPath(); c.arc(0, -100, 30, Math.PI * 0.8, Math.PI * 2.2); c.fill();
+        drawRect(-20, -89, 15, 10, "rgba(0,0,0,0.15)", "#333", 2);
+        drawRect(5, -89, 15, 10, "rgba(0,0,0,0.15)", "#333", 2);
+        drawLine(-5, -84, 5, -84, "#333", 2);
     }
 
-    drawRect(-13, -84, 5, 5, "#111", null);
-    drawRect(8, -84, 5, 5, "#111", null);
-    drawLine(-9, -70, 9, -70, "#924040", 3);
+    drawRect(2, -87, 6, 6, "#111", null);
+    drawRect(18, -87, 6, 6, "#111", null);
+    drawLine(4, -72, 20, -72, "#924040", 3);
 
     c.restore();
 
     let tagBackground = isLeader ? "#f3c623" : "#d62828";
     let tagMessage = isLeader ? (isLula ? "1º  13 LULA" : "1º  22 BOLSO") : (isLula ? "2º  13 LULA" : "2º  22 BOLSO");
-    drawRect(x - 72, y - 185, 144, 28, tagBackground, "#ffffff", 2);
-    drawText(tagMessage, x, y - 165, 14, "#000000", "center", "#ffffff", 1);
+    drawRect(x - 72, y - 195, 144, 30, tagBackground, "#ffffff", 2);
+    drawText(tagMessage, x, y - 174, 15, "#000000", "center", "#ffffff", 1);
 }
 
-// Menu lateral com ícones de Rosa e TikTok
+// Menu lateral com rosas e ícones de música
 function renderGiftsSidebar() {
-    renderSingleGiftBadge(40, 360, "🌹", "ROSA", "#e62238");
-    renderSingleGiftBadge(40, 455, "🌹", "ROSA VELOZ", "#e62238");
-    renderSingleGiftBadge(40, 550, "🌹", "ROSA SUP", "#e62238");
+    renderSingleGiftBadge(40, 360, "🌹", "13 VELOZ", "#e62238");
+    renderSingleGiftBadge(40, 460, "❤️", "22 ESCORREGA", "#e62238");
+    renderSingleGiftBadge(40, 560, "🍩", "13 SUPER VELOZ", "#e62238");
 
-    renderSingleGiftBadge(W - 40, 360, "🎵", "TIKTOK", "#11a855");
-    renderSingleGiftBadge(W - 40, 455, "🎵", "TIKTOK VELOZ", "#11a855");
-    renderSingleGiftBadge(W - 40, 550, "🎵", "TIKTOK SUP", "#11a855");
+    renderSingleGiftBadge(W - 40, 360, "🎵", "22 VELOZ", "#11a855");
+    renderSingleGiftBadge(W - 40, 460, "🦖", "13 ESCORREGA", "#11a855");
+    renderSingleGiftBadge(W - 40, 560, "🎉", "22 SUPER VELOZ", "#11a855");
 }
 
 function renderSingleGiftBadge(x, y, emojiSymbol, labelText, themeColor) {
     c.save();
-    c.fillStyle = "rgba(0, 0, 0, 0.65)";
+    c.fillStyle = "rgba(0, 0, 0, 0.7)";
     c.beginPath();
     c.arc(x, y, 26, 0, Math.PI * 2);
     c.fill();
     c.strokeStyle = themeColor;
     c.lineWidth = 3;
     c.stroke();
-    drawText(emojiSymbol, x, y + 9, 25, "#fff", "center", null);
+    drawText(emojiSymbol, x, y + 9, 24, "#fff", "center", null);
 
     if (x < W / 2) {
-        drawText(labelText, x + 38, y + 5, 12, themeColor, "left", "#000", 3);
+        drawText(labelText, x + 36, y + 5, 12, themeColor, "left", "#000", 3);
     } else {
-        drawText(labelText, x - 38, y + 5, 12, themeColor, "right", "#000", 3);
+        drawText(labelText, x - 36, y + 5, 12, themeColor, "right", "#000", 3);
     }
     c.restore();
 }
 
-// Placar superior arcade
+// Placar superior idêntico ao layout do vídeo com o feed flutuante de chat abaixo
 function renderTopArcadeHUD(elapsedTimeMs) {
-    drawRect(0, 0, W, 145, "#090e17");
-    drawText("CORRIDA PRESIDENCIAL", W / 2, 45, 26, "#ffffff", "center", "#000", 5);
+    drawRect(0, 0, W, 195, "#090e17");
+    drawText("CORRIDA PRESIDENCIAL", W / 2 - 40, 38, 24, "#ffffff", "center", "#000", 5);
 
-    drawRect(W - 145, 15, 130, 46, "#f3c623", "#000", 3);
+    drawRect(W - 145, 12, 130, 42, "#f3c623", "#000", 3);
     let secondsLeft = Math.max(0, Math.ceil((ROUND_DURATION - elapsedTimeMs) / 1000));
-    drawText(`00:${String(secondsLeft).padStart(2, '0')}s`, W - 80, 47, 28, "#000000", "center", null);
+    drawText(`00:${String(secondsLeft).padStart(2, '0')}s`, W - 80, 41, 26, "#000000", "center", null);
 
     const isLulaAhead = progressLula >= progressBolso;
 
-    renderCompetitorCard(15, 60, isLulaAhead ? "1º" : "2º", "13 LULA", progressLula, speedLula, "#d62828", isLulaAhead);
-    renderCompetitorCard(15, 102, isLulaAhead ? "2º" : "1º", "22 BOLSO", progressBolso, speedBolso, "#11a855", !isLulaAhead);
+    renderCompetitorCard(15, 55, isLulaAhead ? "1º" : "2º", "13 LULA", progressLula, Math.floor(speedLula), "#d62828", isLulaAhead);
+    renderCompetitorCard(15, 97, isLulaAhead ? "2º" : "1º", "22 BOLSO", progressBolso, Math.floor(speedBolso), "#11a855", !isLulaAhead);
 
-    if (recentGiftsLog.length > 0) {
-        let lastGift = recentGiftsLog[recentGiftsLog.length - 1];
-        drawRect(15, 152, 440, 38, "rgba(10, 18, 32, 0.95)", "#283b5e", 2);
-        drawText(`${lastGift.user} enviou ${lastGift.gift} x${lastGift.count}`, 25, 177, 13, "#ffffff", "left", "#000", 2);
-        drawText(`IMPULSO - ${lastGift.target.toUpperCase()}`, 310, 177, 12, "#f3c623", "left", "#000", 2);
+    // Feed do chat simulado idêntico à interface da live (linhas rolando)
+    drawRect(15, 142, W - 30, 44, "rgba(16, 26, 45, 0.95)", "#223555", 2);
+    if (chatFeedLog.length > 0) {
+        let currentChat = chatFeedLog[chatFeedLog.length - 1];
+        drawText(`${currentChat.user} enviou ${currentChat.gift} x${currentChat.count}`, 25, 169, 13, "#ffffff", "left", "#000", 2);
+        drawText(`IMPULSO - ${currentChat.target.toUpperCase()}`, 380, 169, 12, "#f3c623", "left", "#000", 2);
     }
 }
 
 function renderCompetitorCard(x, y, positionText, nameText, percentageVal, speedVal, cardColor, isLeaderCard) {
     drawRect(x, y, W - 30, 38, "#162032", "#000", 2);
-
     drawRect(x + 4, y + 4, 30, 30, isLeaderCard ? "#f3c623" : "#3a4d6e");
     drawText(positionText, x + 19, y + 25, 14, isLeaderCard ? "#000" : "#fff", "center", null);
-
     drawText(nameText, x + 100, y + 26, 15, cardColor, "left", "#000", 3);
-
     drawRect(x + 180, y + 11, 320, 16, "#0a0f18");
     drawRect(x + 180, y + 11, 320 * (percentageVal / 100), 16, cardColor);
-
     drawText(`${Math.floor(percentageVal)}%`, x + 535, y + 26, 15, "#ffffff", "right", "#000", 2);
     drawText(`${speedVal} KM/H`, x + 635, y + 26, 13, "#f3c623", "right", "#000", 2);
 }
 
-// Medidor de distância inferior
+// Régua inferior de distância
 function renderDistanceMeterWidget() {
-    let metersGap = Math.abs(progressLula - progressBolso) * 4.5;
-    drawRect(45, 1110, W - 90, 32, "rgba(0, 0, 0, 0.65)", "#334466", 2);
-    drawLine(70, 1126, W - 70, 1126, "#f3c623", 3);
-    drawLine(70, 1118, 70, 1134, "#f3c623", 3);
-    drawLine(W - 70, 1118, W - 70, 1134, "#f3c623", 3);
-
-    drawText(`+${metersGap.toFixed(1)} m`, W / 2, 1132, 17, "#4ae38d", "center", "#000", 3);
+    let metersGap = Math.abs(progressLula - progressBolso) * 4.2;
+    drawRect(45, 1140, W - 90, 34, "rgba(0, 0, 0, 0.7)", "#334466", 2);
+    drawLine(70, 1157, W - 70, 1157, "#f3c623", 3);
+    drawLine(70, 1148, 70, 1166, "#f3c623", 3);
+    drawLine(W - 70, 1148, W - 70, 1166, "#f3c623", 3);
+    drawText(`+${metersGap.toFixed(1)} m`, W / 2, 1163, 18, "#4ae38d", "center", "#000", 3);
 }
 
-// Efeitos de texto flutuantes modificados para exibir "+5% IMPULSO" conforme solicitado
 function renderFloatingBoostEffects(currentTime) {
     for (let i = boostEffects.length - 1; i >= 0; i--) {
         let fx = boostEffects[i];
@@ -282,27 +262,27 @@ function renderFloatingBoostEffects(currentTime) {
 
         c.save();
         c.globalAlpha = alphaValue;
-        drawText(fx.message, fx.posX, currentY, 26, fx.color, "center", "#000000", 5);
+        drawText(fx.message, fx.posX, currentY, 28, fx.color, "center", "#000000", 5);
         c.restore();
     }
 }
 
-// Simulação de interações e chat ajustada estritamente para +5% de impulso
-function simulateRandomLiveActivity(timestamp) {
+// Lógica de +5% de impulso por interação automática no chat
+function simulateLiveInteractions(timestamp) {
     if (isFinished) return;
     
-    if (!window.lastSimulatedGift || timestamp - window.lastSimulatedGift > 3500) {
-        window.lastSimulatedGift = timestamp;
+    if (!window.lastInteractionTime || timestamp - window.lastInteractionTime > 2800) {
+        window.lastInteractionTime = timestamp;
         if (Math.random() > 0.5) {
-            progressLula = Math.min(100, progressLula + 5); // Impulso de exatos 5%
-            speedLula += 4;
-            boostEffects.push({ posX: 210, posY: 600, message: "+5% IMPULSO", color: "#4ae38d", startTime: timestamp });
-            recentGiftsLog.push({ user: "Chat_13", gift: "Rosa 🌹", count: 1, target: "13 Lula" });
+            progressLula = Math.min(100, progressLula + 5); // Exatos 5% de impulso
+            speedLula += 5;
+            boostEffects.push({ posX: 220, posY: 580, message: "+5% IMPULSO", color: "#4ae38d", startTime: timestamp });
+            chatFeedLog.push({ user: "OBenny", gift: "Rosa 🌹", count: 1, target: "13 Lula" });
         } else {
-            progressBolso = Math.min(100, progressBolso + 5); // Impulso de exatos 5%
-            speedBolso += 4;
-            boostEffects.push({ posX: 510, posY: 720, message: "+5% IMPULSO", color: "#4ae38d", startTime: timestamp });
-            recentGiftsLog.push({ user: "Chat_22", gift: "TikTok 🎵", count: 1, target: "22 Bolsonaro" });
+            progressBolso = Math.min(100, progressBolso + 5); // Exatos 5% de impulso
+            speedBolso += 5;
+            boostEffects.push({ posX: 500, posY: 720, message: "+5% IMPULSO", color: "#4ae38d", startTime: timestamp });
+            chatFeedLog.push({ user: "Ricelly", gift: "TikTok 🎵", count: 1, target: "22 Bolsonaro" });
         }
     }
 }
@@ -311,12 +291,12 @@ function resetRoundAutomatically() {
     startTime = performance.now();
     isFinished = false;
     winnerText = "";
-    progressLula = 4;
-    progressBolso = 6;
-    speedLula = 32;
-    speedBolso = 64;
+    progressLula = 10;
+    progressBolso = 15;
+    speedLula = 44;
+    speedBolso = 68;
     boostEffects = [];
-    recentGiftsLog = [];
+    chatFeedLog = [];
     if (autoRestartTimeout) {
         clearTimeout(autoRestartTimeout);
         autoRestartTimeout = null;
@@ -327,14 +307,13 @@ function gameLoop(timestamp) {
     let elapsedTime = timestamp - startTime;
 
     if (!isFinished) {
-        // Velocidade de avanço suave e progressiva na pista longa
-        progressLula = Math.min(100, progressLula + (speedLula * 0.00045));
-        progressBolso = Math.min(100, progressBolso + (speedBolso * 0.00045));
+        progressLula = Math.min(100, progressLula + (speedLula * 0.0004));
+        progressBolso = Math.min(100, progressBolso + (speedBolso * 0.0004));
 
-        if (speedLula > 32) speedLula -= 0.04;
-        if (speedBolso > 64) speedBolso -= 0.04;
+        if (speedLula > 44) speedLula -= 0.05;
+        if (speedBolso > 68) speedBolso -= 0.05;
 
-        simulateRandomLiveActivity(timestamp);
+        simulateLiveInteractions(timestamp);
 
         if (progressLula >= 100 || progressBolso >= 100 || elapsedTime >= ROUND_DURATION) {
             isFinished = true;
@@ -351,13 +330,13 @@ function gameLoop(timestamp) {
     renderStadium(timestamp);
     renderExtendedTrack(timestamp);
 
-    let runnerXLula = 110 + (progressLula * 5.2);
-    let runnerXBolso = 110 + (progressBolso * 5.2);
+    let runnerXLula = 90 + (progressLula * 5.4);
+    let runnerXBolso = 90 + (progressBolso * 5.4);
     let lulaLeads = progressLula >= progressBolso;
 
-    // Pistas posicionadas verticalmente de forma alongada
-    renderRunnerCaricature(Math.min(W - 95, runnerXLula), 700, "lula", timestamp, lulaLeads);
-    renderRunnerCaricature(Math.min(W - 95, runnerXBolso), 930, "bolsonaro", timestamp + 400, !lulaLeads);
+    // Pistas ajustadas na proporção exata da referência
+    renderRunnerCaricature(Math.min(W - 95, runnerXLula), 620, "lula", timestamp, lulaLeads);
+    renderRunnerCaricature(Math.min(W - 95, runnerXBolso), 880, "bolsonaro", timestamp + 400, !lulaLeads);
 
     renderGiftsSidebar();
     renderFloatingBoostEffects(timestamp);
@@ -365,10 +344,10 @@ function gameLoop(timestamp) {
     renderTopArcadeHUD(elapsedTime);
 
     if (isFinished) {
-        drawRect(80, 520, W - 160, 200, "rgba(9, 14, 23, 0.96)", "#f3c623", 4);
-        drawText("FIM DA RODADA!", W / 2, 580, 32, "#ffffff", "center", "#000", 5);
-        drawText(winnerText, W / 2, 650, 28, winnerText.includes("13") ? "#e62238" : "#11a855", "center", "#000", 4);
-        drawText("Nova rodada iniciando automaticamente...", W / 2, 695, 15, "#ccc", "center", null);
+        drawRect(80, 500, W - 160, 200, "rgba(9, 14, 23, 0.96)", "#f3c623", 4);
+        drawText("FIM DA RODADA!", W / 2, 560, 32, "#ffffff", "center", "#000", 5);
+        drawText(winnerText, W / 2, 630, 28, winnerText.includes("13") ? "#e62238" : "#11a855", "center", "#000", 4);
+        drawText("Reiniciando nova rodada...", W / 2, 675, 15, "#ccc", "center", null);
     }
 
     requestAnimationFrame(gameLoop);
