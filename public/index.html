@@ -18,13 +18,13 @@ const canvas = document.querySelector("#game");
 const c = canvas.getContext("2d");
 
 const W = 720, H = 1280;
-const ROUND_DURATION = 90000; // 90 segundos
+const ROUND_DURATION = 90000;
 
 let startTime = performance.now();
 let isFinished = false;
 let winnerText = "";
-let speedLula = 44, speedBolso = 68;
-let progressLula = 10, progressBolso = 15;
+let speedLula = 40, speedBolso = 40;
+let progressLula = 10, progressBolso = 10;
 let boostEffects = [];
 let chatFeedLog = [];
 let autoRestartTimeout = null;
@@ -38,13 +38,19 @@ function handleResize() {
 window.addEventListener("resize", handleResize);
 handleResize();
 
-function drawRect(x, y, w, h, fillColor, strokeColor = null, strokeWidth = 2) {
+function drawRect(x, y, w, h, fillColor, strokeColor = null, strokeWidth = 2, radius = 0) {
+    c.beginPath();
+    if (radius) {
+        c.roundRect(x, y, w, h, radius);
+    } else {
+        c.rect(x, y, w, h);
+    }
     c.fillStyle = fillColor;
-    c.fillRect(x, y, w, h);
+    c.fill();
     if (strokeColor) {
         c.strokeStyle = strokeColor;
         c.lineWidth = strokeWidth;
-        c.strokeRect(x, y, w, h);
+        c.stroke();
     }
 }
 
@@ -60,7 +66,7 @@ function drawText(textStr, x, y, size, color = "#fff", align = "center", strokeC
     c.fillText(textStr, x, y);
 }
 
-function drawLine(x1, y1, x2, y2, color, width) {
+function drawSmoothLine(x1, y1, x2, y2, color, width) {
     c.strokeStyle = color;
     c.lineWidth = width;
     c.lineCap = "round";
@@ -70,7 +76,7 @@ function drawLine(x1, y1, x2, y2, color, width) {
     c.stroke();
 }
 
-// Estádio e arquibancadas de alta qualidade visual
+// Estádio e fundo detalhado
 function renderStadium(timestamp) {
     let skyGradient = c.createLinearGradient(0, 0, 0, 320);
     skyGradient.addColorStop(0, "#101d35");
@@ -85,8 +91,8 @@ function renderStadium(timestamp) {
             let seatX = col * 19 + ((row % 2) * 9) - ((timestamp * 0.015) % 19);
             let seatY = 160 + row * 26;
             let colorIndex = (col * 5 + row * 9) % seatColors.length;
-            drawRect(seatX, seatY, 10, 12, seatColors[colorIndex]);
-            drawRect(seatX + 2, seatY - 5, 6, 5, "#f5c29b");
+            drawRect(seatX, seatY, 10, 12, seatColors[colorIndex], null, 0, 2);
+            drawRect(seatX + 2, seatY - 5, 6, 5, "#f5c29b", null, 0, 3);
         }
     }
 
@@ -94,133 +100,157 @@ function renderStadium(timestamp) {
     drawRect(0, 325, W, 10, "#ffffff");
 }
 
-// Pista longa estendida com perspectiva
-function renderExtendedTrack(timestamp) {
-    drawRect(0, 335, W, 740, "#b84c38");
+// Pista com perspectiva inclinada dinâmica
+function renderPerspectiveTrack(timestamp) {
+    drawRect(0, 335, W, 750, "#b84c38");
 
-    for (let i = 0; i < 6; i++) {
-        let lineY = 350 + i * 120;
-        drawRect(0, lineY, W, 5, "rgba(255, 255, 255, 0.8)");
+    for (let i = 0; i < 5; i++) {
+        let lineY = 360 + i * 135;
+        drawRect(0, lineY, W, 6, "rgba(255, 255, 255, 0.85)");
     }
 
-    let trackShift = (timestamp * 0.4) % 180;
-    for (let i = -2; i < 7; i++) {
-        let posX = i * 180 - trackShift;
-        drawLine(posX, 335, posX + 140, 1075, "rgba(255, 255, 255, 0.15)", 8);
+    let trackShift = (timestamp * 0.4) % 160;
+    for (let i = -2; i < 8; i++) {
+        let posX = i * 160 - trackShift;
+        drawSmoothLine(posX, 335, posX + 100, 1085, "rgba(255, 255, 255, 0.18)", 8);
     }
 }
 
-// Corredores detalhados
-function renderRunnerCaricature(x, y, teamType, timestamp, isLeader) {
+// Personagens orgânicos e fluidos
+function renderOrganicRunner(x, y, teamType, timestamp, isLeader) {
     c.save();
     c.translate(x, y);
-    c.scale(1.3, 1.3);
+    c.scale(1.25, 1.25);
 
     const isLula = teamType === "lula";
-    const shirtColor = isLula ? "#d62828" : "#1b8a4f";
-    const pantsColor = isLula ? "#9e1b1b" : "#125933";
-    const runCycle = Math.sin(timestamp * 0.03);
+    const primaryColor = isLula ? "#d62828" : "#1b8a4f";
+    const darkColor = isLula ? "#9e1b1b" : "#125933";
+    
+    const runCycle = Math.sin(timestamp * 0.025);
+    const armCycle = Math.cos(timestamp * 0.025);
 
-    c.fillStyle = "rgba(0, 0, 0, 0.4)";
+    c.fillStyle = "rgba(0, 0, 0, 0.45)";
     c.beginPath();
-    c.ellipse(0, 15, 38, 10, 0, 0, Math.PI * 2);
+    c.ellipse(0, 22, 32, 11, 0, 0, Math.PI * 2);
     c.fill();
 
-    drawLine(-10, -5, -25 + runCycle * 22, 18, pantsColor, 14);
-    drawLine(10, -5, 25 - runCycle * 22, 18, pantsColor, 14);
+    drawSmoothLine(-6, 2, -22 + runCycle * 25, 22, darkColor, 13);
+    drawSmoothLine(6, 2, 22 - runCycle * 25, 22, darkColor, 13);
 
-    drawRect(-32 + runCycle * 22, 15, 16, 9, "#ffffff");
-    drawRect(16 - runCycle * 22, 15, 16, 9, "#ffffff");
+    drawRect(-30 + runCycle * 25, 20, 16, 9, "#ffffff", "#ccc", 1, 4);
+    drawRect(14 - runCycle * 25, 20, 16, 9, "#ffffff", "#ccc", 1, 4);
 
-    drawRect(-20, -58, 40, 50, shirtColor, isLula ? "#ff6b6b" : "#4ae38d", 2);
+    let bodyGrad = c.createLinearGradient(-18, -50, 18, 0);
+    bodyGrad.addColorStop(0, primaryColor);
+    bodyGrad.addColorStop(1, darkColor);
+
+    c.beginPath();
+    c.roundRect(-18, -50, 36, 46, [10, 10, 6, 6]);
+    c.fillStyle = bodyGrad;
+    c.fill();
+    c.strokeStyle = "#111";
+    c.lineWidth = 2;
+    c.stroke();
+
     if (!isLula) {
-        drawRect(-20, -58, 40, 9, "#f3c623");
+        drawRect(-18, -50, 36, 9, "#f3c623", null, 0, [8, 8, 0, 0]);
     } else {
-        drawText("★", 0, -31, 18, "#ffffff", "center", null);
+        drawText("★", 0, -27, 15, "#ffffff", "center", null);
     }
 
-    drawLine(-20, -48, -32 - runCycle * 16, -26, shirtColor, 12);
-    drawLine(20, -48, 32 + runCycle * 16, -26, shirtColor, 12);
+    drawSmoothLine(-16, -40, -28 - armCycle * 16, -18, primaryColor, 11);
+    drawSmoothLine(16, -40, 28 + armCycle * 16, -18, primaryColor, 11);
 
-    c.fillStyle = "#f3be98";
     c.beginPath();
-    c.arc(0, -85, 30, 0, Math.PI * 2);
+    c.arc(-28 - armCycle * 16, -18, 5, 0, Math.PI * 2);
+    c.arc(28 + armCycle * 16, -18, 5, 0, Math.PI * 2);
+    c.fillStyle = "#f3be98";
     c.fill();
-    c.strokeStyle = "#1a1a1a";
+
+    let headGrad = c.createRadialGradient(0, -78, 2, 0, -78, 28);
+    headGrad.addColorStop(0, "#ffdbb5");
+    headGrad.addColorStop(1, "#dfa47c");
+
+    c.beginPath();
+    c.arc(0, -78, 26, 0, Math.PI * 2);
+    c.fillStyle = headGrad;
+    c.fill();
+    c.strokeStyle = "#222";
     c.lineWidth = 2;
     c.stroke();
 
     if (isLula) {
-        c.fillStyle = "#e0e0e0";
-        c.beginPath(); c.arc(0, -98, 31, Math.PI, Math.PI * 2); c.fill();
-        c.beginPath(); c.arc(0, -78, 30, 0.2, Math.PI - 0.2); c.fill();
-        drawRect(-30, -104, 60, 9, "#d62828");
+        c.fillStyle = "#dcdcdc";
+        c.beginPath(); c.arc(0, -90, 27, Math.PI, Math.PI * 2); c.fill();
+        c.beginPath(); c.arc(0, -72, 26, 0.2, Math.PI - 0.2); c.fill();
+        drawRect(-26, -96, 52, 8, "#d62828", null, 0, 3);
     } else {
         c.fillStyle = "#3d2b1f";
-        c.beginPath(); c.arc(0, -100, 30, Math.PI * 0.8, Math.PI * 2.2); c.fill();
-        drawRect(-20, -89, 15, 10, "rgba(0,0,0,0.15)", "#333", 2);
-        drawRect(5, -89, 15, 10, "rgba(0,0,0,0.15)", "#333", 2);
-        drawLine(-5, -84, 5, -84, "#333", 2);
+        c.beginPath(); c.arc(0, -92, 26, Math.PI * 0.8, Math.PI * 2.2); c.fill();
+        drawRect(-16, -82, 13, 9, "rgba(0,0,0,0.2)", "#333", 1.5, 2);
+        drawRect(3, -82, 13, 9, "rgba(0,0,0,0.2)", "#333", 1.5, 2);
+        drawSmoothLine(-3, -77, 3, -77, "#333", 2);
     }
 
-    drawRect(2, -87, 6, 6, "#111", null);
-    drawRect(18, -87, 6, 6, "#111", null);
-    drawLine(4, -72, 20, -72, "#924040", 3);
+    c.fillStyle = "#111";
+    c.beginPath();
+    c.arc(-7, -78, 3, 0, Math.PI * 2);
+    c.arc(9, -78, 3, 0, Math.PI * 2);
+    c.fill();
 
     c.restore();
 
     let tagBackground = isLeader ? "#f3c623" : "#d62828";
     let tagMessage = isLeader ? (isLula ? "1º  13 LULA" : "1º  22 BOLSO") : (isLula ? "2º  13 LULA" : "2º  22 BOLSO");
-    drawRect(x - 72, y - 195, 144, 30, tagBackground, "#ffffff", 2);
-    drawText(tagMessage, x, y - 174, 15, "#000000", "center", "#ffffff", 1);
+    drawRect(x - 70, y - 180, 140, 28, tagBackground, "#ffffff", 2, 6);
+    drawText(tagMessage, x, y - 160, 14, "#000000", "center", "#ffffff", 1);
 }
 
-// Menu lateral com rosas e ícones de música
+// Menu lateral com ícones
 function renderGiftsSidebar() {
-    renderSingleGiftBadge(40, 360, "🌹", "13 VELOZ", "#e62238");
-    renderSingleGiftBadge(40, 460, "❤️", "22 ESCORREGA", "#e62238");
-    renderSingleGiftBadge(40, 560, "🍩", "13 SUPER VELOZ", "#e62238");
+    renderSingleGiftBadge(35, 360, "🌹", "13 VELOZ", "#e62238");
+    renderSingleGiftBadge(35, 460, "❤️", "22 ESCORREGA", "#e62238");
+    renderSingleGiftBadge(35, 560, "🍩", "13 SUPER VELOZ", "#e62238");
 
-    renderSingleGiftBadge(W - 40, 360, "🎵", "22 VELOZ", "#11a855");
-    renderSingleGiftBadge(W - 40, 460, "🦖", "13 ESCORREGA", "#11a855");
-    renderSingleGiftBadge(W - 40, 560, "🎉", "22 SUPER VELOZ", "#11a855");
+    renderSingleGiftBadge(W - 35, 360, "🎵", "22 VELOZ", "#11a855");
+    renderSingleGiftBadge(W - 35, 460, "🦖", "13 ESCORREGA", "#11a855");
+    renderSingleGiftBadge(W - 35, 560, "🎉", "22 SUPER VELOZ", "#11a855");
 }
 
 function renderSingleGiftBadge(x, y, emojiSymbol, labelText, themeColor) {
     c.save();
-    c.fillStyle = "rgba(0, 0, 0, 0.7)";
+    c.fillStyle = "rgba(0, 0, 0, 0.75)";
     c.beginPath();
-    c.arc(x, y, 26, 0, Math.PI * 2);
+    c.arc(x, y, 24, 0, Math.PI * 2);
     c.fill();
     c.strokeStyle = themeColor;
     c.lineWidth = 3;
     c.stroke();
-    drawText(emojiSymbol, x, y + 9, 24, "#fff", "center", null);
+    drawText(emojiSymbol, x, y + 8, 22, "#fff", "center", null);
 
     if (x < W / 2) {
-        drawText(labelText, x + 36, y + 5, 12, themeColor, "left", "#000", 3);
+        drawText(labelText, x + 35, y + 5, 11, themeColor, "left", "#000", 3);
     } else {
-        drawText(labelText, x - 36, y + 5, 12, themeColor, "right", "#000", 3);
+        drawText(labelText, x - 35, y + 5, 11, themeColor, "right", "#000", 3);
     }
     c.restore();
 }
 
-// Placar superior idêntico ao layout do vídeo com o feed flutuante de chat abaixo
+// Placar superior
 function renderTopArcadeHUD(elapsedTimeMs) {
     drawRect(0, 0, W, 195, "#090e17");
-    drawText("CORRIDA PRESIDENCIAL", W / 2 - 40, 38, 24, "#ffffff", "center", "#000", 5);
+    drawText("CORRIDA PRESIDENCIAL", W / 2, 38, 24, "#ffffff", "center", "#000", 5);
 
-    drawRect(W - 145, 12, 130, 42, "#f3c623", "#000", 3);
+    drawRect(W - 140, 12, 125, 42, "#f3c623", "#000", 3, 6);
     let secondsLeft = Math.max(0, Math.ceil((ROUND_DURATION - elapsedTimeMs) / 1000));
-    drawText(`00:${String(secondsLeft).padStart(2, '0')}s`, W - 80, 41, 26, "#000000", "center", null);
+    drawText(`00:${String(secondsLeft).padStart(2, '0')}s`, W - 77, 41, 26, "#000000", "center", null);
 
     const isLulaAhead = progressLula >= progressBolso;
 
     renderCompetitorCard(15, 55, isLulaAhead ? "1º" : "2º", "13 LULA", progressLula, Math.floor(speedLula), "#d62828", isLulaAhead);
     renderCompetitorCard(15, 97, isLulaAhead ? "2º" : "1º", "22 BOLSO", progressBolso, Math.floor(speedBolso), "#11a855", !isLulaAhead);
 
-    // Feed do chat simulado idêntico à interface da live (linhas rolando)
-    drawRect(15, 142, W - 30, 44, "rgba(16, 26, 45, 0.95)", "#223555", 2);
+    drawRect(15, 142, W - 30, 44, "rgba(16, 26, 45, 0.95)", "#223555", 2, 8);
     if (chatFeedLog.length > 0) {
         let currentChat = chatFeedLog[chatFeedLog.length - 1];
         drawText(`${currentChat.user} enviou ${currentChat.gift} x${currentChat.count}`, 25, 169, 13, "#ffffff", "left", "#000", 2);
@@ -229,24 +259,23 @@ function renderTopArcadeHUD(elapsedTimeMs) {
 }
 
 function renderCompetitorCard(x, y, positionText, nameText, percentageVal, speedVal, cardColor, isLeaderCard) {
-    drawRect(x, y, W - 30, 38, "#162032", "#000", 2);
-    drawRect(x + 4, y + 4, 30, 30, isLeaderCard ? "#f3c623" : "#3a4d6e");
+    drawRect(x, y, W - 30, 38, "#162032", "#000", 2, 6);
+    drawRect(x + 4, y + 4, 30, 30, isLeaderCard ? "#f3c623" : "#3a4d6e", null, 0, 4);
     drawText(positionText, x + 19, y + 25, 14, isLeaderCard ? "#000" : "#fff", "center", null);
     drawText(nameText, x + 100, y + 26, 15, cardColor, "left", "#000", 3);
-    drawRect(x + 180, y + 11, 320, 16, "#0a0f18");
-    drawRect(x + 180, y + 11, 320 * (percentageVal / 100), 16, cardColor);
+    drawRect(x + 180, y + 11, 320, 16, "#0a0f18", null, 0, 4);
+    drawRect(x + 180, y + 11, 320 * (percentageVal / 100), 16, cardColor, null, 0, 4);
     drawText(`${Math.floor(percentageVal)}%`, x + 535, y + 26, 15, "#ffffff", "right", "#000", 2);
     drawText(`${speedVal} KM/H`, x + 635, y + 26, 13, "#f3c623", "right", "#000", 2);
 }
 
-// Régua inferior de distância
 function renderDistanceMeterWidget() {
     let metersGap = Math.abs(progressLula - progressBolso) * 4.2;
-    drawRect(45, 1140, W - 90, 34, "rgba(0, 0, 0, 0.7)", "#334466", 2);
-    drawLine(70, 1157, W - 70, 1157, "#f3c623", 3);
-    drawLine(70, 1148, 70, 1166, "#f3c623", 3);
-    drawLine(W - 70, 1148, W - 70, 1166, "#f3c623", 3);
-    drawText(`+${metersGap.toFixed(1)} m`, W / 2, 1163, 18, "#4ae38d", "center", "#000", 3);
+    drawRect(45, 1150, W - 90, 32, "rgba(0, 0, 0, 0.75)", "#334466", 2, 8);
+    drawSmoothLine(70, 1166, W - 70, 1166, "#f3c623", 3);
+    drawSmoothLine(70, 1158, 70, 1174, "#f3c623", 3);
+    drawSmoothLine(W - 70, 1158, W - 70, 1174, "#f3c623", 3);
+    drawText(`+${metersGap.toFixed(1)} m`, W / 2, 1172, 17, "#4ae38d", "center", "#000", 3);
 }
 
 function renderFloatingBoostEffects(currentTime) {
@@ -267,34 +296,39 @@ function renderFloatingBoostEffects(currentTime) {
     }
 }
 
-// Lógica de +5% de impulso por interação automática no chat
-function simulateLiveInteractions(timestamp) {
+// Funções para receber os impulsos reais da live (WebSocket / PostMessage)
+function applyGiftBoost(team, giftName, boostValue = 5) {
     if (isFinished) return;
-    
-    if (!window.lastInteractionTime || timestamp - window.lastInteractionTime > 2800) {
-        window.lastInteractionTime = timestamp;
-        if (Math.random() > 0.5) {
-            progressLula = Math.min(100, progressLula + 5); // Exatos 5% de impulso
-            speedLula += 5;
-            boostEffects.push({ posX: 220, posY: 580, message: "+5% IMPULSO", color: "#4ae38d", startTime: timestamp });
-            chatFeedLog.push({ user: "OBenny", gift: "Rosa 🌹", count: 1, target: "13 Lula" });
-        } else {
-            progressBolso = Math.min(100, progressBolso + 5); // Exatos 5% de impulso
-            speedBolso += 5;
-            boostEffects.push({ posX: 500, posY: 720, message: "+5% IMPULSO", color: "#4ae38d", startTime: timestamp });
-            chatFeedLog.push({ user: "Ricelly", gift: "TikTok 🎵", count: 1, target: "22 Bolsonaro" });
-        }
+    if (team === 'lula') {
+        progressLula = Math.min(100, progressLula + boostValue);
+        speedLula += 6;
+        boostEffects.push({ posX: 220, posY: 580, message: `+${boostValue}% IMPULSO`, color: "#4ae38d", startTime: performance.now() });
+        chatFeedLog.push({ user: "Espectador", gift: giftName, count: 1, target: "13 Lula" });
+    } else {
+        progressBolso = Math.min(100, progressBolso + boostValue);
+        speedBolso += 6;
+        boostEffects.push({ posX: 500, posY: 720, message: `+${boostValue}% IMPULSO`, color: "#4ae38d", startTime: performance.now() });
+        chatFeedLog.push({ user: "Espectador", gift: giftName, count: 1, target: "22 Bolsonaro" });
     }
 }
+
+// Ouve eventos externos caso sua live envie mensagens (ex: TikTok Live connector)
+window.addEventListener("message", (event) => {
+    const data = event.data;
+    if (data && data.type === "gift") {
+        if (data.target === "lula") applyGiftBoost("lula", data.gift || "Rosa 🌹", 5);
+        if (data.target === "bolsonaro") applyGiftBoost("bolsonaro", data.gift || "TikTok 🎵", 5);
+    }
+});
 
 function resetRoundAutomatically() {
     startTime = performance.now();
     isFinished = false;
     winnerText = "";
     progressLula = 10;
-    progressBolso = 15;
-    speedLula = 44;
-    speedBolso = 68;
+    progressBolso = 10;
+    speedLula = 40;
+    speedBolso = 40;
     boostEffects = [];
     chatFeedLog = [];
     if (autoRestartTimeout) {
@@ -307,13 +341,12 @@ function gameLoop(timestamp) {
     let elapsedTime = timestamp - startTime;
 
     if (!isFinished) {
-        progressLula = Math.min(100, progressLula + (speedLula * 0.0004));
-        progressBolso = Math.min(100, progressBolso + (speedBolso * 0.0004));
+        // Movimento inercial suave (só avança se houver velocidade dos presentes)
+        progressLula = Math.min(100, progressLula + (speedLula * 0.0001));
+        progressBolso = Math.min(100, progressBolso + (speedBolso * 0.0001));
 
-        if (speedLula > 44) speedLula -= 0.05;
-        if (speedBolso > 68) speedBolso -= 0.05;
-
-        simulateLiveInteractions(timestamp);
+        if (speedLula > 10) speedLula -= 0.02;
+        if (speedBolso > 10) speedBolso -= 0.02;
 
         if (progressLula >= 100 || progressBolso >= 100 || elapsedTime >= ROUND_DURATION) {
             isFinished = true;
@@ -328,15 +361,14 @@ function gameLoop(timestamp) {
     }
 
     renderStadium(timestamp);
-    renderExtendedTrack(timestamp);
+    renderPerspectiveTrack(timestamp);
 
     let runnerXLula = 90 + (progressLula * 5.4);
     let runnerXBolso = 90 + (progressBolso * 5.4);
     let lulaLeads = progressLula >= progressBolso;
 
-    // Pistas ajustadas na proporção exata da referência
-    renderRunnerCaricature(Math.min(W - 95, runnerXLula), 620, "lula", timestamp, lulaLeads);
-    renderRunnerCaricature(Math.min(W - 95, runnerXBolso), 880, "bolsonaro", timestamp + 400, !lulaLeads);
+    renderOrganicRunner(Math.min(W - 95, runnerXLula), 620, "lula", timestamp, lulaLeads);
+    renderOrganicRunner(Math.min(W - 95, runnerXBolso), 880, "bolsonaro", timestamp + 400, !lulaLeads);
 
     renderGiftsSidebar();
     renderFloatingBoostEffects(timestamp);
@@ -344,7 +376,7 @@ function gameLoop(timestamp) {
     renderTopArcadeHUD(elapsedTime);
 
     if (isFinished) {
-        drawRect(80, 500, W - 160, 200, "rgba(9, 14, 23, 0.96)", "#f3c623", 4);
+        drawRect(80, 500, W - 160, 200, "rgba(9, 14, 23, 0.96)", "#f3c623", 4, 12);
         drawText("FIM DA RODADA!", W / 2, 560, 32, "#ffffff", "center", "#000", 5);
         drawText(winnerText, W / 2, 630, 28, winnerText.includes("13") ? "#e62238" : "#11a855", "center", "#000", 4);
         drawText("Reiniciando nova rodada...", W / 2, 675, 15, "#ccc", "center", null);
